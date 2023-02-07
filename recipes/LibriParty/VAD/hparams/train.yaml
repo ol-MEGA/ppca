@@ -23,7 +23,7 @@ train_log: !ref <output_folder>/train_log.txt
 data_folder: !PLACEHOLDER  # e.g. /path/to/LibriParty
 
 # Additional data (for augmentation)
-open_rir_folder: !ref <data_folder> # where to store noisy +ris from open_rir
+open_rir_folder: !PLACEHOLDER # where to store noisy +ris from open_rir
 musan_folder: !PLACEHOLDER  # e.g, /path/to/musan (download it from the web before)
 commonlanguage_folder: !PLACEHOLDER  # e.g, /path/to/commonlang (download it from the web before)
 
