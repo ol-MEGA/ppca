@@ -282,9 +282,8 @@ if __name__ == "__main__":
     )
 
     # Test
-    avg_test_loss = vad_brain.evaluate(
+    vad_brain.evaluate(
         test_data,
         min_key="loss",
         test_loader_kwargs=hparams["test_dataloader_opts"],
     )
-    print(avg_test_loss)
