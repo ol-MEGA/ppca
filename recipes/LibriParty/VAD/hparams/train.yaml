@@ -12,11 +12,17 @@
 #          Mirco Ravanelli 2021
 # ##################################################################################################
 
-# Seed and output folders
+# Seed
 seed: 1986
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
+
+# Feature parameters
+n_fft: 400
+n_mels: 40
+
+# Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
-save_folder: !ref <output_folder>/save
+save_folder: !ref <output_folder>/save/mels/<n_mels>
 train_log: !ref <output_folder>/train_log.txt
 
 # LibriParty (main data)
@@ -38,7 +44,7 @@ multilang_speech_csv: !ref <save_folder>/multilang_speech.csv
 skip_prep: False # Skip data preparation
 
 # Training parameters
-N_epochs: 100
+N_epochs: 2 # 100
 lr: 1.0
 lr_final: 0.1
 batch_size: 2
@@ -51,10 +57,6 @@ valid_dataloader_opts:
     batch_size: !ref <batch_size>
 test_dataloader_opts:
     batch_size: !ref <batch_size>
-
-# Feature parameters
-n_fft: 400
-n_mels: 40
 
 # Model parameters
 # activation: !name:torch.nn.LeakyReLU
