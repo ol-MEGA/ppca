@@ -23,7 +23,7 @@ n_mels: 40
 # Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
 save_folder: !ref <output_folder>/save
-train_log: !ref <output_folder>/train_log.txt
+train_log: !ref <save_folder>/mels/<n_mels>/train_log_mel_<n_mels>.txt
 
 # LibriParty (main data)
 data_folder: !PLACEHOLDER  # e.g. /path/to/LibriParty
@@ -143,7 +143,7 @@ cnn: !new:speechbrain.nnet.containers.Sequential
         kernel_size: (3, 3)
 
 rnn: !new:speechbrain.nnet.RNN.GRU
-    input_shape: [null, null, 320]
+    input_shape: [null, null, floor(<n_mels> * 0.25)]
     hidden_size: !ref <rnn_neurons>
     num_layers: !ref <rnn_layers>
     bidirectional: True
