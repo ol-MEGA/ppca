@@ -61,6 +61,7 @@ class VADBrain(sb.Brain):
         feats = feats.detach()
         outputs = self.modules.cnn(feats)
 
+        print(outputs.shape)
         outputs = outputs.reshape(
             outputs.shape[0],
             outputs.shape[1],
