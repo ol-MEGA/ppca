@@ -143,7 +143,7 @@ cnn: !new:speechbrain.nnet.containers.Sequential
         kernel_size: (3, 3)
 
 rnn: !new:speechbrain.nnet.RNN.GRU
-    input_shape: [null, null, floor(<n_mels> * 0.25)]
+    input_shape: [null, null, !ref <n_mels> // 4]
     hidden_size: !ref <rnn_neurons>
     num_layers: !ref <rnn_layers>
     bidirectional: True
