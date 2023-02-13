@@ -61,9 +61,10 @@ test_dataloader_opts:
 # Model parameters
 # activation: !name:torch.nn.LeakyReLU
 # dropout: 0.15
-# cnn_blocks: 2
-# cnn_channels: (16, 16)
-# cnn_kernelsize: (3, 3)
+cnn_blocks: 2
+cnn1_channels: 16
+cnn2_channels: 32
+cnn_kernelsize: (3, 3)
 rnn_layers: 2
 rnn_neurons: 32
 # rnn_bidirectional: True
@@ -136,14 +137,14 @@ cnn: !new:speechbrain.nnet.containers.Sequential
     input_shape: [null, null, !ref <n_mels>]
     norm1: !name:speechbrain.nnet.normalization.LayerNorm
     cnn1: !name:speechbrain.lobes.models.CRDNN.CNN_Block
-        channels: 16
-        kernel_size: (3, 3)
+        channels: !ref <cnn1_channels>
+        kernel_size: !ref <cnn_kernelsize>
     cnn2: !name:speechbrain.lobes.models.CRDNN.CNN_Block
-        channels: 32
-        kernel_size: (3, 3)
+        channels: !ref <cnn2_channels>
+        kernel_size: !ref <cnn_kernelsize>
 
 rnn: !new:speechbrain.nnet.RNN.GRU
-    input_shape: [null, null, !ref <n_mels> // 4]
+    input_shape: [null, null, !ref <n_mels> // 4 * <cnn2_channels>]
     hidden_size: !ref <rnn_neurons>
     num_layers: !ref <rnn_layers>
     bidirectional: True
