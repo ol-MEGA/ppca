@@ -19,11 +19,12 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 # Feature parameters
 n_fft: 400
 n_mels: 40
+hop_length: 10  # in ms
 
 # Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
 save_folder: !ref <output_folder>/save
-train_log: !ref <save_folder>/mels/<n_mels>/train_log_mel_<n_mels>.txt
+train_log: !ref <save_folder>/mels/<n_mels>/hop_length/<hop_length>/train_log_mel_<n_mels>_hop_<hop_length>.txt
 
 # LibriParty (main data)
 data_folder: !PLACEHOLDER  # e.g. /path/to/LibriParty
@@ -50,7 +51,7 @@ lr_final: 0.1
 batch_size: 2
 example_length: 5 # in seconds
 sample_rate: 16000
-time_resolution: 0.01 # in seconds
+time_resolution: !ref <hop_length> / 1000 # in seconds
 train_dataloader_opts:
     batch_size: !ref <batch_size>
 valid_dataloader_opts:
@@ -184,7 +185,7 @@ lr_annealing: !new:speechbrain.nnet.schedulers.LinearScheduler
     epoch_count: !ref <N_epochs>
 
 checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
-    checkpoints_dir: !ref <save_folder>/mels/<n_mels>
+    checkpoints_dir: !ref <save_folder>/mels/<n_mels>/hop_length/<hop_length>
     recoverables:
         model: !ref <model>
         normalizer: !ref <mean_var_norm>
