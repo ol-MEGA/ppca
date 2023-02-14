@@ -294,7 +294,7 @@ def create_chunks(
     return wav, target, lengths
 
 
-def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ):
+def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time_resolution):
     """This method creates different types of augmented that are useful to train
     a VAD system. It creates signals with different types of transitions, such
     as speech=>speech, noise=>speech, speech=>noise. The new signals are
@@ -346,6 +346,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ):
         wav_samples_noise,
         speech1=False,
         speech2=True,
+        time_resolution=time_resolution,
     )
 
     # Create chunk with speech=>noise transition
@@ -359,6 +360,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ):
         wav_samples_noise,
         speech1=True,
         speech2=False,
+        time_resolution=time_resolution,
     )
 
     # Create chunk with speech=>speech transition
@@ -373,6 +375,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ):
         wav_samples_noise,
         speech1=True,
         speech2=True,
+        time_resolution=time_resolution,
     )
 
     # Create chunk with noise=>noise transition
@@ -383,6 +386,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ):
         wav_samples_noise,
         speech1=False,
         speech2=False,
+        time_resolution=time_resolution,
     )
 
     # Concatenate all the augmented data

@@ -51,6 +51,7 @@ class VADBrain(sb.Brain):
                 wavs,
                 targets,
                 lens_targ,
+                self.hparams.time_resolution,
             )
             self.lens = lens
             self.targets = targets
