@@ -19,12 +19,13 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 # Feature parameters
 n_fft: 400
 n_mels: 40
+win_length: 25  # in ms
 hop_length: 10  # in ms
 
 # Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
 save_folder: !ref <output_folder>/save
-train_log: !ref <save_folder>/mels/<n_mels>/hop_length/<hop_length>/train_log_mel_<n_mels>_hop_<hop_length>.txt
+train_log: !ref <save_folder>/mels/<n_mels>/win_length/<win_length>/train_log_mel_<n_mels>_win_<win_length>.txt
 
 # LibriParty (main data)
 data_folder: !PLACEHOLDER  # e.g. /path/to/LibriParty
@@ -129,6 +130,7 @@ compute_features: !new:speechbrain.lobes.features.Fbank
     sample_rate: !ref <sample_rate>
     n_fft: !ref <n_fft>
     n_mels: !ref <n_mels>
+    win_length: !ref <win_length>  # in ms
     hop_length: !ref <hop_length>  # in ms
 
 mean_var_norm: !new:speechbrain.processing.features.InputNormalization
@@ -185,7 +187,7 @@ lr_annealing: !new:speechbrain.nnet.schedulers.LinearScheduler
     epoch_count: !ref <N_epochs>
 
 checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
-    checkpoints_dir: !ref <save_folder>/mels/<n_mels>/hop_length/<hop_length>
+    checkpoints_dir: !ref <save_folder>/mels/<n_mels>/win_length/<win_length>
     recoverables:
         model: !ref <model>
         normalizer: !ref <mean_var_norm>
