@@ -84,6 +84,7 @@ class Fbank(torch.nn.Module):
         self,
         deltas=False,
         context=False,
+        smoothPSD=False,
         requires_grad=False,
         sample_rate=16000,
         f_min=0,
@@ -101,6 +102,7 @@ class Fbank(torch.nn.Module):
         super().__init__()
         self.deltas = deltas
         self.context = context
+        self.smoothPSD = smoothPSD
         self.requires_grad = requires_grad
 
         if f_max is None:
@@ -138,6 +140,8 @@ class Fbank(torch.nn.Module):
         """
         STFT = self.compute_STFT(wav)
         mag = spectral_magnitude(STFT)
+        if self.smoothPSD:
+            mag = smooth_magnitude(mag)
         fbanks = self.compute_fbanks(mag)
         if self.deltas:
             delta1 = self.compute_deltas(fbanks)
