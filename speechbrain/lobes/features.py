@@ -31,6 +31,8 @@ class Fbank(torch.nn.Module):
     context : bool (default: False)
         Whether or not to append forward and backward contexts to
         the features.
+    smoothPSD: bool (default: False)
+        Whether or not to smooth and subsample the features.
     requires_grad : bool (default: False)
         Whether to allow parameters (i.e. fbank centers and
         spreads) to update during training.
