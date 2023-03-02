@@ -45,7 +45,7 @@ music_csv: !ref <save_folder>/music.csv
 noise_csv: !ref <save_folder>/noise.csv
 speech_csv: !ref <save_folder>/speech.csv
 multilang_speech_csv: !ref <save_folder>/multilang_speech.csv
-skip_prep: False # Skip data preparation
+skip_prep: True # Skip data preparation
 
 # Training parameters
 N_epochs: 100
