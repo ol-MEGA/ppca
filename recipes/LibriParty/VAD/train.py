@@ -164,6 +164,10 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("speech")
     @sb.utils.data_pipeline.provides("target")
     def vad_targets(speech, hparams=hparams):
+        if "smoothPSD" in hparams:
+            # subsample gt vector if features are smoothed (olMEGA)
+            hparams["time_resolution"] = hparams["time_resolution"] * 10
+
         boundaries = (
             [
                 (
