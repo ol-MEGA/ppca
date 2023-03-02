@@ -166,13 +166,15 @@ def dataio_prep(hparams):
     def vad_targets(speech, hparams=hparams):
         if "smoothPSD" in hparams:
             # subsample gt vector if features are smoothed (olMEGA)
-            hparams["time_resolution"] = hparams["time_resolution"] * 10
+            time_resolution = hparams["time_resolution"] * 10
+        else:
+            time_resolution = hparams["time_resolution"]
 
         boundaries = (
             [
                 (
-                    int(interval[0] / hparams["time_resolution"]),
-                    int(interval[1] / hparams["time_resolution"]),
+                    int(interval[0] / time_resolution),
+                    int(interval[1] / time_resolution),
                 )
                 for interval in speech
             ]
@@ -182,7 +184,7 @@ def dataio_prep(hparams):
         gt = torch.zeros(
             int(
                 np.ceil(
-                    hparams["example_length"] * (1 / hparams["time_resolution"])
+                    hparams["example_length"] / time_resolution
                 )
             )
         )
