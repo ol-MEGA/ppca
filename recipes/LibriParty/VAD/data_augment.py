@@ -27,6 +27,7 @@ def add_chunk(
     max_amp=1.0,
     chunk_shift=0,
     speech=False,
+    smoothPSD=False,
 ):
     """Add a new source (noise or speech) to an existing chunk of speech.
     The length of the appended signal is randomly selected within the
@@ -43,7 +44,7 @@ def add_chunk(
     sample_rate: int
         The sample rate of the input waveforms.
     time_resolution:
-        Time resolution of the targets (in seconds)-
+        Time resolution of the targets (in seconds).
     example_length: float
         Duration (in seconds) of the existing chunk.
     min_len: float
@@ -65,6 +66,8 @@ def add_chunk(
     speech: bool
         If True, the new waveform is assumed to be a speech signal. The targets
         will be put to 1 for all the duration on the speech signal.
+    smoothPSD: bool (default: False)
+        Whether or not to smooth and subsample the features.
 
     Returns
     -------
@@ -128,6 +131,10 @@ def add_chunk(
         wav_chunk[:, chunk_shift:end_chunk] + wav_to_paste
     )
 
+    # subsample gt vector if features are smoothed (olMEGA)
+    if smoothPSD:
+        time_resolution = time_resolution * 10
+    
     # Update targets if the appended signal is speech.
     if speech:
         beg_speech_target = int(chunk_shift / (sample_rate * time_resolution))
@@ -141,8 +148,11 @@ def add_chunk(
     return wav_chunk, target, lenghts, end_chunk
 
 
-def initialize_targets(wav, sample_rate, time_resolution):
+def initialize_targets(wav, sample_rate, time_resolution, smoothPSD=False):
     "Initializes the targets."
+    if smoothPSD:
+        time_resolution = time_resolution * 10
+
     target_downsampling = sample_rate * time_resolution
     target_len = int(wav.shape[1] / (target_downsampling))
     targets = torch.zeros(
@@ -205,6 +215,7 @@ def create_chunks(
     low_background=0.05,
     high_background=0.15,
     max_pause=16000,
+    smoothPSD=False,
 ):
     """This method creates augmented data for training the VAD.
     It sums up two delayed sources + a noise background.
@@ -221,7 +232,7 @@ def create_chunks(
     sample_rate: int
         The sample rate of the input waveforms.
     time_resolution:
-        Time resolution of the targets (in seconds)-
+        Time resolution of the targets (in seconds).
     example_length: float
         Duration (in seconds) of the existing chunk.
     speech1: bool
@@ -237,6 +248,8 @@ def create_chunks(
         See above.
     max_pause: int
         Max pause in samples between the two sources.
+    smoothPSD: bool (default: False)
+        Whether or not to smooth and subsample the features.
 
     Returns
     -------
@@ -262,11 +275,12 @@ def create_chunks(
     wav, target, lengths, end_chunk = add_chunk(
         wav1,
         wav,
-        initialize_targets(wav1, sample_rate, time_resolution),
+        initialize_targets(wav1, sample_rate, time_resolution, smoothPSD=smoothPSD),
         sample_rate=sample_rate,
         time_resolution=time_resolution,
         example_length=example_length,
         speech=speech1,
+        smoothPSD=smoothPSD,
     )
 
     # Choosing the lag of the second source
@@ -284,6 +298,7 @@ def create_chunks(
         time_resolution=time_resolution,
         example_length=example_length,
         speech=speech2,
+        smoothPSD=smoothPSD,
     )
 
     wav = wav.transpose(1, 2).reshape(wav.shape[0] * wav.shape[2], wav.shape[1])
@@ -294,7 +309,7 @@ def create_chunks(
     return wav, target, lengths
 
 
-def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time_resolution):
+def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time_resolution, smoothPSD=False):
     """This method creates different types of augmented that are useful to train
     a VAD system. It creates signals with different types of transitions, such
     as speech=>speech, noise=>speech, speech=>noise. The new signals are
@@ -318,6 +333,10 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time
         The original targets.
     lens_targ: torch.tensor
         The lenght of the original targets.
+    time_resolution: int
+        The time resolution, i.e. hop length of features in seconds.
+    smoothPSD: bool (default: False)
+        Whether or not to smooth and subsample the features.
 
 
     Returns
@@ -347,6 +366,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time
         speech1=False,
         speech2=True,
         time_resolution=time_resolution,
+        smoothPSD=smoothPSD,
     )
 
     # Create chunk with speech=>noise transition
@@ -361,6 +381,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time
         speech1=True,
         speech2=False,
         time_resolution=time_resolution,
+        smoothPSD=smoothPSD,
     )
 
     # Create chunk with speech=>speech transition
@@ -376,6 +397,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time
         speech1=True,
         speech2=True,
         time_resolution=time_resolution,
+        smoothPSD=smoothPSD,
     )
 
     # Create chunk with noise=>noise transition
@@ -387,6 +409,7 @@ def augment_data(noise_datasets, speech_datasets, wavs, targets, lens_targ, time
         speech1=False,
         speech2=False,
         time_resolution=time_resolution,
+        smoothPSD=smoothPSD,
     )
 
     # Concatenate all the augmented data
