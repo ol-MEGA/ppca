@@ -167,6 +167,7 @@ def dataio_prep(hparams):
         if "smoothPSD" in hparams:
             # subsample gt vector if features are smoothed (olMEGA)
             time_resolution = hparams["time_resolution"] * 10
+            print("subsample gt vector", time_resolution)
         else:
             time_resolution = hparams["time_resolution"]
 
