@@ -8,9 +8,11 @@ This pipeline has been derived trom the LibriSpeech recipe. First it creates the
 - go to custom_training/ASR/create_data_manifest/ and you will find create_data_manifest_ASR.py
 - the function can be run as follows 
 
-   python create_data_manifest_ASR.py --data-folder /path/to/dataset \ 
-                                      --save-json-train path/wheretosave/train.json \ 
-                                      --save-json-valid path/wheretosave/valid.json \ 
-                                      --save-json-test  path/wheretosave/test.json \
-                                      --extension extension/of/audio/files (wav, flac ex.) \
-                                      --transcripts-folder path/to/folder/with/transcripts \
+   python create_data_manifest_ASR.py --data-folder /path/to/dataset  --save-json-train path/wheretosave/train.json --save-json-valid path/wheretosave/valid.json --save-json-test  path/wheretosave/test.json --extension extension/of/audio/files (wav, flac ex.) --transcripts-folder path/to/folder/with/transcripts 
+
+this function generate 3 json files with the training, validation and test sets.
+
+### ASR training
+
+- to run the training of the mdoel, costum_training/ASR/training_script/gpu.sh
+- there are different paerameters you need to adjust specifically, in the .yaml file
