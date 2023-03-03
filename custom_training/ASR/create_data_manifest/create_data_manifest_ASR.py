@@ -195,7 +195,7 @@ if __name__ == "__main__":
  
     # Get all the transcripts
     extension = [".trans.txt"]
-    trans_list = get_all_files(args.train_clean360_folder, match_and=extension)
+    trans_list = get_all_files(args.transcripts_folder, match_and=extension)
     trans_dict = get_transcription(trans_list)         
 
     # Random split the signal list into train, valid, and test sets.
