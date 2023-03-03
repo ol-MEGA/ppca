@@ -49,9 +49,11 @@ For a better experience, we encourage you to learn more about
 # Results
 The model performance on the LibriParty test set is:
 
-| Release | hyperparams file | Test Precision | Test Recall | Test F-Score | Model link | GPUs |
-|:-------------:|:---------------------------:| -----:| -----:| --------:| :-----------:|  :-----------:|
-| 2021-09-09 | train.yaml |  0.9518 | 0.9437 | 0.9477 | [Model](https://drive.google.com/drive/folders/1YLYGuiyuTH0D7fXOOp6cMddfQoM74o-Y?usp=sharing) | 1xV100 16GB
+| Release | hyperparams file | n_mels | Test Precision | Test Recall | Test F-Score | Model link | GPUs |
+|:-------------:|:----------------------------:| -------:| -------:| -------:| --------:| :-----------:|  :-----------:|
+| 2021-09-09 | train.yaml | 40 |  0.9518 | 0.9437 | 0.9477 | [Model](https://drive.google.com/drive/folders/1YLYGuiyuTH0D7fXOOp6cMddfQoM74o-Y?usp=sharing) | 1xV100 16GB
+| 2023-02-10 | train.yaml | 40 |  0.9471 | 0.9503 | 0.9487 | JP |
+| 2023-03-02 | train_olMEGA.yaml | 40 |  0.9431 | 0.8645 | 0.9021 | JP |
 
 
 ## Pipeline description
