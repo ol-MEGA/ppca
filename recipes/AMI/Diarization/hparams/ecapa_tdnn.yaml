@@ -76,6 +76,15 @@ sampling_rate: 16000
 dataloader_opts:
     batch_size: !ref <batch_size>
 
+anonymize_McAdams_opts: 
+    anon_bool: True
+    winLengthinms: 20
+    shiftLengthinms: 10
+    lp_order: 20
+    mcadams: 0.8
+    mc_coeff_min: 0.5
+    mc_coeff_max: 0.9
+
 compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>
 

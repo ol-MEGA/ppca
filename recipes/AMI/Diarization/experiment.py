@@ -20,6 +20,7 @@ Authors
 
 import os
 import sys
+import random
 import torch
 import logging
 import pickle
@@ -36,6 +37,7 @@ from speechbrain.processing import diarization as diar
 from speechbrain.utils.DER import DER
 from speechbrain.dataio.dataio import read_audio
 from speechbrain.dataio.dataio import read_audio_multichannel
+from mcadams.main import anonym
 
 np.random.seed(1234)
 
@@ -488,6 +490,23 @@ def dataio_prep(hparams, json_file):
         @sb.utils.data_pipeline.provides("sig")
         def audio_pipeline(wav):
             sig = read_audio(wav)
+
+            # optional: anonymization
+            if params["anonymize_McAdams_opts"]["anon_bool"]:
+                opts = params["anonymize_McAdams_opts"]
+
+                # get fixed or random coeff
+                if isinstance(opts["mcadams"], str):
+                    coeff = random.uniform(opts["mc_coeff_min"], opts["mc_coeff_max"])
+                else:
+                    coeff = opts["mcadams"]
+
+                # Putting modules on the device.
+                anonym.to(run_opts["device"])
+                sig = anonym(params["sampling_rate"], sig, 
+                       winLengthinms=opts["winLengthinms"], shiftLengthinms=opts["shiftLengthinms"], 
+                       lp_order=opts["lp_order"], mcadams=coeff)
+                
             return sig
 
     sb.dataio.dataset.add_dynamic_item([dataset], audio_pipeline)
@@ -651,6 +670,8 @@ if __name__ == "__main__":  # noqa: C901
 
         # Writing DER values to a file. Append tag.
         der_file_name = split_type + "_DER_" + tag
+        if params["anonymize_McAdams_opts"]["anon_bool"]:
+            der_file_name = split_type + "_DER_McAdams_" + tag
         out_der_file = os.path.join(params["der_dir"], der_file_name)
         msg = "Writing DER file to: " + out_der_file
         logger.info(msg)
