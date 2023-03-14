@@ -14,6 +14,9 @@ Authors
 
 # Importing libraries
 import math
+import random
+import numpy as np
+import librosa
 import torch
 import torch.nn.functional as F
 from speechbrain.dataio.legacy import ExtendedCSVDataset
@@ -1228,3 +1231,149 @@ class DoClip(torch.nn.Module):
         clipped_waveform = waveforms.clamp(-clip_value, clip_value)
 
         return clipped_waveform
+
+class McAdamsCoeff(torch.nn.Module):
+    """Returns pseudoanonymized waveforms from the input waveforms
+        using the McAdams coefficient.
+
+    Original authors: Jose Patino, Massimiliano Todisco, Pramod Bachhav, Nicholas Evans
+                    Audio Security and Privacy Group, EURECOM
+    Modified by Francesco Nespoli, Jule Pohlhausen
+
+    Arguments
+    ---------
+    wav : tensor
+            A batch of audio signals to transform.
+    sample_rate : int (default: 160000)
+        Sampling rate for the input waveforms.
+    win_length : float (default: 20)
+        Length (in ms) of the sliding window used to compute the LPC analysis.
+    hop_length : float (default: 10)
+        Length (in ms) of the hop of the sliding window used to compute
+        the STFT.
+    lp_order : float (default: 20)
+        Order of the linear filter.
+    mcadams : float (default: 0.8)
+        McAdams coefficient for pseudoanonymization.
+    mcadams_min : float (default: 0.5)
+        Minimum value of mcadams coefficient.
+    mcadams_max : float (default: 0.9)
+        Maximum value of mcadams coefficient.
+    random_coeff : bool (default: False)
+        If False (default), the function assumes a fixed McAdams coefficient, 
+        otherwise a random number between mcadams_min and mcadams_max is choosen.
+
+    Example
+    -------
+    >>> import torch
+    >>> anon = McAdamsCoeff()
+    >>> inputs = torch.randn([10, 16000])
+    >>> inputs_anon = anon(inputs)
+    >>> inputs_anon.shape
+    torch.Size([10, 16000])
+    """
+    def __init__(
+        self,
+        sample_rate=16000,
+        win_length=20,
+        hop_length=10,
+        lp_order=20,
+        mcadams=0.8,
+        mcadams_min=0.5,
+        mcadams_max=0.9,
+        random_coeff=False,
+    ):
+        super().__init__()
+        self.sample_rate = sample_rate
+        self.win_length = win_length
+        self.hop_length = hop_length
+        self.lp_order = lp_order
+        self.mcadams = mcadams
+        self.mcadams_min = mcadams_min
+        self.mcadams_max = mcadams_max
+        self.random_coeff = random_coeff
+
+        # Convert win_length and hop_length from ms to samples
+        self.win_length = int(
+            round((self.sample_rate / 1000.0) * self.win_length)
+        )
+        self.hop_length = int(
+            round((self.sample_rate / 1000.0) * self.hop_length)
+        )
+
+        # Create normalized von Hann window
+        self.window = np.hanning(self.win_length)
+        K = np.sum(self.window) / self.hop_length
+        self.window = np.sqrt(self.window / K)
+
+        # small number to avoid 0
+        self.eps = 1e-14
+
+    def forward(self, wav):
+        # number of batches and signal length
+        Nbatch, sig_length = wav.shape
+
+        # nr of complete frames
+        Nframes = 1 + np.floor((sig_length - self.win_length) / self.hop_length).astype(int)    
+
+        # carry out the overlap - add FFT processing
+        sig_rec = torch.zeros_like(wav)  # allocate output+'ringing' vector
+
+        # convert to numpy array
+        wav = wav.numpy()
+
+        for b in range(Nbatch):
+            # optional: get random McAdams coeff
+            if self.random_coeff:
+                self.mcadams = random.uniform(self.mcadams_min, self.mcadams_max)
+
+            for m in range(Nframes):
+                # indices of the mth frame
+                index = np.arange(m * self.hop_length, np.minimum(m * self.hop_length + self.win_length, sig_length))
+                # windowed mth frame (other than rectangular window)
+                frame = wav[b, index] * self.window + self.eps
+                # get lpc coefficients
+                a_lpc = librosa.core.lpc(frame, order=self.lp_order)
+                # get poles
+                poles = scipy.signal.tf2zpk(np.array([1]), a_lpc)[1]
+                # index of imaginary poles
+                ind_imag = np.where(np.isreal(poles) == False)[0]
+                # index of first imaginary poles
+                ind_imag_con = ind_imag[np.arange(0, np.size(ind_imag), 2)]
+
+                # here we define the new angles of the poles, shifted accordingly to the mcadams coefficient
+                # values >1 expand the spectrum, while values <1 constract it for angles>1
+                # values >1 constract the spectrum, while values <1 expand it for angles<1
+                # the choice of this value is strongly linked to the number of lpc coefficients
+                # a bigger lpc coefficients number constraints the effect of the coefficient to very small variations
+                # a smaller lpc coefficients number allows for a bigger flexibility
+                new_angles = np.angle(poles[ind_imag_con]) ** self.mcadams
+                # new_angles = np.angle(poles[ind_imag_con])**path[m]
+
+                # make sure new angles stay between 0 and pi
+                new_angles[np.where(new_angles >= np.pi)] = np.pi
+                new_angles[np.where(new_angles <= 0)] = 0
+
+                # copy of the original poles to be adjusted with the new angles
+                new_poles = poles
+                for k in np.arange(np.size(ind_imag_con)):
+                    # compute new poles with the same magnitued and new angles
+                    new_poles[ind_imag_con[k]] = np.abs(poles[ind_imag_con[k]]) * np.exp(1j * new_angles[k])
+                    # applied also to the conjugate pole
+                    new_poles[ind_imag_con[k] + 1] = np.abs(poles[ind_imag_con[k] + 1]) * np.exp(-1j * new_angles[k])
+
+                    # recover new, modified lpc coefficients
+                a_lpc_new = np.real(np.poly(new_poles))
+                # get residual excitation for reconstruction
+                res = scipy.signal.lfilter(a_lpc, np.array(1), frame)
+                # reconstruct frames with new lpc coefficient
+                frame_rec = scipy.signal.lfilter(np.array([1]), a_lpc_new, res)
+                frame_rec = frame_rec * self.window
+
+                outindex = np.arange(m * self.hop_length, m * self.hop_length + len(frame_rec))
+                # overlap add
+                sig_rec[b, outindex] += np.float32(frame_rec)
+        
+        # normalize outsput signal
+        sig_rec = sig_rec / torch.max(torch.abs(sig_rec))
+        return sig_rec
