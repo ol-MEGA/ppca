@@ -37,7 +37,6 @@ from speechbrain.processing import diarization as diar
 from speechbrain.utils.DER import DER
 from speechbrain.dataio.dataio import read_audio
 from speechbrain.dataio.dataio import read_audio_multichannel
-from mcadams.main import anonym
 
 np.random.seed(1234)
 
@@ -492,20 +491,9 @@ def dataio_prep(hparams, json_file):
             sig = read_audio(wav)
 
             # optional: anonymization
-            if params["anonymize_McAdams_opts"]["anon_bool"]:
-                opts = params["anonymize_McAdams_opts"]
-
-                # get fixed or random coeff
-                if isinstance(opts["mcadams"], str):
-                    coeff = random.uniform(opts["mc_coeff_min"], opts["mc_coeff_max"])
-                else:
-                    coeff = opts["mcadams"]
-
-                # Putting modules on the device.
-                anonym.to(run_opts["device"])
-                sig = anonym(params["sampling_rate"], sig, 
-                       winLengthinms=opts["winLengthinms"], shiftLengthinms=opts["shiftLengthinms"], 
-                       lp_order=opts["lp_order"], mcadams=coeff)
+            if params["apply_anon"]:
+                print("McAdams anonymization")
+                sig = params["anonymize_McAdams"](sig)
                 
             return sig
 
