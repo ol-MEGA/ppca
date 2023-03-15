@@ -17,6 +17,7 @@ import math
 import random
 import numpy as np
 import librosa
+import scipy
 import torch
 import torch.nn.functional as F
 from speechbrain.dataio.legacy import ExtendedCSVDataset
@@ -1311,13 +1312,18 @@ class McAdamsCoeff(torch.nn.Module):
 
     def forward(self, wav):
         # number of batches and signal length
-        Nbatch, sig_length = wav.shape
+        if wav.dim() == 1:
+            wav = wav.unsqueeze(0)
+        elif wav.dim() == 2:
+            Nbatch, sig_length = wav.shape
+        else:
+            raise ValueError("McAdamsCoeff expects 1d or 2d inputs. Got " + str(len(wav.shape)))
 
         # nr of complete frames
         Nframes = 1 + np.floor((sig_length - self.win_length) / self.hop_length).astype(int)    
 
-        # carry out the overlap - add FFT processing
-        sig_rec = torch.zeros_like(wav)  # allocate output+'ringing' vector
+        # allocate output vector
+        sig_rec = torch.zeros_like(wav) 
 
         # convert to numpy array
         wav = wav.numpy()
@@ -1373,7 +1379,7 @@ class McAdamsCoeff(torch.nn.Module):
                 outindex = np.arange(m * self.hop_length, m * self.hop_length + len(frame_rec))
                 # overlap add
                 sig_rec[b, outindex] += np.float32(frame_rec)
-        
+            
         # normalize outsput signal
-        sig_rec = sig_rec / torch.max(torch.abs(sig_rec))
+        sig_rec /= torch.abs(sig_rec).max(1, keepdim=True)[0]
         return sig_rec
