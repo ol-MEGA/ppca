@@ -51,6 +51,8 @@ class VADBrain(sb.Brain):
                 wavs,
                 targets,
                 lens_targ,
+                self.hparams.time_resolution,
+                self.hparams.smoothPSD,
             )
             self.lens = lens
             self.targets = targets
@@ -163,11 +165,17 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("speech")
     @sb.utils.data_pipeline.provides("target")
     def vad_targets(speech, hparams=hparams):
+        if "smoothPSD" in hparams:
+            # subsample gt vector if features are smoothed (olMEGA)
+            time_resolution = hparams["time_resolution"] * 10
+        else:
+            time_resolution = hparams["time_resolution"]
+
         boundaries = (
             [
                 (
-                    int(interval[0] / hparams["time_resolution"]),
-                    int(interval[1] / hparams["time_resolution"]),
+                    int(interval[0] / time_resolution),
+                    int(interval[1] / time_resolution),
                 )
                 for interval in speech
             ]
@@ -177,7 +185,7 @@ def dataio_prep(hparams):
         gt = torch.zeros(
             int(
                 np.ceil(
-                    hparams["example_length"] * (1 / hparams["time_resolution"])
+                    hparams["example_length"] / time_resolution
                 )
             )
         )
@@ -208,6 +216,8 @@ if __name__ == "__main__":
     # Load hyperparameters file with command-line overrides
     with open(hparams_file) as fin:
         hparams = load_hyperpyyaml(fin, overrides)
+
+    print(hparams)
 
     # Initialize ddp (useful only for multi-GPU DDP training)
     sb.utils.distributed.ddp_init_group(run_opts)
