@@ -24,9 +24,7 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
     shift = np.floor(shiftLengthinms*0.001*fs).astype(int)
     length_sig = len(sig)
     
-    # fft processing parameters
-    NFFT = 2**(np.ceil((np.log2(winlen)))).astype(int)
-    # anaysis and synth window which satisfies the constraint
+    # analysis and synth window which satisfies the constraint
     wPR = np.hanning(winlen)
     K = np.sum(wPR)/shift
     win = np.sqrt(wPR/K)
@@ -35,7 +33,7 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
     # carry out the overlap - add FFT processing
     sig_rec = np.zeros([length_sig]) # allocate output+'ringing' vector
     
-    for m in np.arange(1,Nframes):
+    for m in np.arange(Nframes):
         # indices of the mth frame
         index = np.arange(m*shift,np.minimum(m*shift+winlen,length_sig))    
         # windowed mth frame (other than rectangular window)
@@ -51,8 +49,8 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
         
         # here we define the new angles of the poles, shifted accordingly to the mcadams coefficient
         # values >1 expand the spectrum, while values <1 constract it for angles>1
-	# values >1 constract the spectrum, while values <1 expand it for angles<1
-	# the choice of this value is strongly linked to the number of lpc coefficients
+        # values >1 constract the spectrum, while values <1 expand it for angles<1
+        # the choice of this value is strongly linked to the number of lpc coefficients
         # a bigger lpc coefficients number constraints the effect of the coefficient to very small variations
         # a smaller lpc coefficients number allows for a bigger flexibility
         new_angles = np.angle(poles[ind_imag_con])**mcadams
@@ -79,7 +77,7 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
  
         outindex = np.arange(m*shift,m*shift+len(frame_rec))
         # overlap add
-        sig_rec[outindex] = sig_rec[outindex] + frame_rec
+        sig_rec[outindex] += frame_rec
     sig_rec = sig_rec/np.max(np.abs(sig_rec))
     scipy.io.wavfile.write(output_file, fs, np.float32(sig_rec)) 
     return []
@@ -87,21 +85,30 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
 if __name__ == "__main__":
     #Parse args    
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir',type=str,default='../data/libri_test_enrolls_anon')
+    parser.add_argument('--data_dir',type=str)
     parser.add_argument('--anon_suffix',type=str,default='_anon')
     parser.add_argument('--n_coeffs',type=int,default=20)
     parser.add_argument('--mc_coeff',type=float,default=0.8)
+    parser.add_argument('--mc_coeff_min', type=float, default=0.5)
+    parser.add_argument('--mc_coeff_max', type=float, default=0.9)
+    parser.add_argument('--mc_rand',type=bool,default=False)
     parser.add_argument('--winLengthinms',type=int,default=20)
     parser.add_argument('--shiftLengthinms',type=int,default=10)
     config = parser.parse_args()
     
     #Load protocol file
-    list_name= config.data_dir + '/wav.scp'
+    list_name = config.data_dir + '/wav.scp'
     list_files = np.genfromtxt(list_name,dtype='U')
+
+    if config.mc_rand: config.anon_suffix + '_rand'
     
     config.data_dir = config.data_dir+config.anon_suffix
     
     for idx,file in enumerate(list_files):   
         print(str(idx+1),'/',len(list_files))
+
+        if config.mc_rand:
+            config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
+
         anonym(file, output_dir=config.data_dir+'/wav/'+file[0]+'/', winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
        
