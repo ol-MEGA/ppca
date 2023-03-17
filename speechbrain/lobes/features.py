@@ -9,6 +9,7 @@ import torch
 from speechbrain.processing.features import (
     STFT,
     spectral_magnitude,
+    smooth_magnitude,
     Filterbank,
     DCT,
     Deltas,
@@ -30,6 +31,8 @@ class Fbank(torch.nn.Module):
     context : bool (default: False)
         Whether or not to append forward and backward contexts to
         the features.
+    smoothPSD: bool (default: False)
+        Whether or not to smooth and subsample the features.
     requires_grad : bool (default: False)
         Whether to allow parameters (i.e. fbank centers and
         spreads) to update during training.
@@ -83,6 +86,7 @@ class Fbank(torch.nn.Module):
         self,
         deltas=False,
         context=False,
+        smoothPSD=False,
         requires_grad=False,
         sample_rate=16000,
         f_min=0,
@@ -100,6 +104,7 @@ class Fbank(torch.nn.Module):
         super().__init__()
         self.deltas = deltas
         self.context = context
+        self.smoothPSD = smoothPSD
         self.requires_grad = requires_grad
 
         if f_max is None:
@@ -137,6 +142,8 @@ class Fbank(torch.nn.Module):
         """
         STFT = self.compute_STFT(wav)
         mag = spectral_magnitude(STFT)
+        if self.smoothPSD:
+            mag = smooth_magnitude(mag)
         fbanks = self.compute_fbanks(mag)
         if self.deltas:
             delta1 = self.compute_deltas(fbanks)
@@ -437,3 +444,84 @@ class Leaf(torch.nn.Module):
                 "Leaf expects 2d or 3d inputs. Got " + str(len(shape))
             )
         return in_channels
+
+
+class smoothedPSD(torch.nn.Module):
+    """Generate features for input to the speech pipeline.
+
+    Arguments
+    ---------
+    deltas : bool (default: False)
+        Whether or not to append derivatives and second derivatives
+        to the features.
+    context : bool (default: False)
+        Whether or not to append forward and backward contexts to
+        the features.
+    sample_rate : int (default: 160000)
+        Sampling rate for the input waveforms.
+    win_length : float (default: 25)
+        Length (in ms) of the sliding window used to compute the STFT.
+    hop_length : float (default: 12.5)
+        Length (in ms) of the hop of the sliding window used to compute
+        the STFT.
+    n_fft : int (default: 512)
+        Number of samples to use in each stft.
+    left_frames : int (default: 5)
+        Number of frames of left context to add.
+    right_frames : int (default: 5)
+        Number of frames of right context to add.
+
+    Example
+    -------
+    >>> import torch
+    >>> inputs = torch.randn([10, 16000])
+    >>> feature_maker = smoothedPSD()
+    >>> feats = feature_maker(inputs)
+    >>> feats.shape
+    torch.Size([10, 9, 257])
+    """
+
+    def __init__(
+        self,
+        deltas=False,
+        context=False,
+        sample_rate=16000,
+        win_length=25,
+        hop_length=12.5,
+        n_fft=512,
+        left_frames=5,
+        right_frames=5,
+    ):
+        super().__init__()
+        self.deltas = deltas
+        self.context = context
+
+        self.compute_STFT = STFT(
+            sample_rate=sample_rate,
+            n_fft=n_fft,
+            win_length=win_length,
+            hop_length=hop_length,
+        )
+        self.compute_deltas = Deltas(input_size=n_fft)
+        self.context_window = ContextWindow(
+            left_frames=left_frames, right_frames=right_frames,
+        )
+
+    def forward(self, wav):
+        """Returns a set of features generated from the input waveforms.
+
+        Arguments
+        ---------
+        wav : tensor
+            A batch of audio signals to transform to features.
+        """
+        STFT = self.compute_STFT(wav)
+        mag = spectral_magnitude(STFT)
+        mag_smoothed = smooth_magnitude(mag)
+        if self.deltas:
+            delta1 = self.compute_deltas(mag_smoothed)
+            delta2 = self.compute_deltas(delta1)
+            mag_smoothed = torch.cat([mag_smoothed, delta1, delta2], dim=2)
+        if self.context:
+            mag_smoothed = self.context_window(mag_smoothed)
+        return mag_smoothed

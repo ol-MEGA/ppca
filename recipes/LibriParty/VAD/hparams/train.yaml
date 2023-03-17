@@ -12,12 +12,20 @@
 #          Mirco Ravanelli 2021
 # ##################################################################################################
 
-# Seed and output folders
+# Seed
 seed: 1986
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
+
+# Feature parameters
+n_fft: 400
+n_mels: 40
+win_length: 25  # in ms
+hop_length: 10  # in ms
+
+# Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
 save_folder: !ref <output_folder>/save
-train_log: !ref <output_folder>/train_log.txt
+train_log: !ref <save_folder>/mels/<n_mels>/win_length/<win_length>/train_log_mel_<n_mels>_win_<win_length>.txt
 
 # LibriParty (main data)
 data_folder: !PLACEHOLDER  # e.g. /path/to/LibriParty
@@ -44,7 +52,7 @@ lr_final: 0.1
 batch_size: 2
 example_length: 5 # in seconds
 sample_rate: 16000
-time_resolution: 0.01 # in seconds
+time_resolution: !ref <hop_length> / 1000 # in seconds
 train_dataloader_opts:
     batch_size: !ref <batch_size>
 valid_dataloader_opts:
@@ -52,16 +60,13 @@ valid_dataloader_opts:
 test_dataloader_opts:
     batch_size: !ref <batch_size>
 
-# Feature parameters
-n_fft: 400
-n_mels: 40
-
 # Model parameters
 # activation: !name:torch.nn.LeakyReLU
 # dropout: 0.15
-# cnn_blocks: 2
-# cnn_channels: (16, 16)
-# cnn_kernelsize: (3, 3)
+cnn_blocks: 2
+cnn1_channels: 16
+cnn2_channels: 32
+cnn_kernelsize: (3, 3)
 rnn_layers: 2
 rnn_neurons: 32
 # rnn_bidirectional: True
@@ -125,7 +130,8 @@ compute_features: !new:speechbrain.lobes.features.Fbank
     sample_rate: !ref <sample_rate>
     n_fft: !ref <n_fft>
     n_mels: !ref <n_mels>
-    hop_length: !ref <time_resolution> * 1000 # in ms
+    win_length: !ref <win_length>  # in ms
+    hop_length: !ref <hop_length>  # in ms
 
 mean_var_norm: !new:speechbrain.processing.features.InputNormalization
     norm_type: sentence
@@ -134,14 +140,14 @@ cnn: !new:speechbrain.nnet.containers.Sequential
     input_shape: [null, null, !ref <n_mels>]
     norm1: !name:speechbrain.nnet.normalization.LayerNorm
     cnn1: !name:speechbrain.lobes.models.CRDNN.CNN_Block
-        channels: 16
-        kernel_size: (3, 3)
+        channels: !ref <cnn1_channels>
+        kernel_size: !ref <cnn_kernelsize>
     cnn2: !name:speechbrain.lobes.models.CRDNN.CNN_Block
-        channels: 32
-        kernel_size: (3, 3)
+        channels: !ref <cnn2_channels>
+        kernel_size: !ref <cnn_kernelsize>
 
 rnn: !new:speechbrain.nnet.RNN.GRU
-    input_shape: [null, null, 320]
+    input_shape: [null, null, !ref <n_mels> // 4 * <cnn2_channels>]
     hidden_size: !ref <rnn_neurons>
     num_layers: !ref <rnn_layers>
     bidirectional: True
@@ -181,7 +187,7 @@ lr_annealing: !new:speechbrain.nnet.schedulers.LinearScheduler
     epoch_count: !ref <N_epochs>
 
 checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
-    checkpoints_dir: !ref <save_folder>
+    checkpoints_dir: !ref <save_folder>/mels/<n_mels>/win_length/<win_length>
     recoverables:
         model: !ref <model>
         normalizer: !ref <mean_var_norm>
