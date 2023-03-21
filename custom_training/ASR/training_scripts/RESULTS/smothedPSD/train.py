@@ -414,7 +414,7 @@ if __name__ == "__main__":
     # CLI:
     hparams_file, run_opts, overrides = sb.parse_arguments(sys.argv[1:])
     with open(hparams_file) as fin:
-        hparams = load_hyperpyyaml(fin,overrides)
+        hparams = load_hyperpyyaml(fin, overrides)
 
     # If --distributed_launch then
     # create ddp_group with the right communication protocol

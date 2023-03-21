@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-json-valid', type=str, help='Path where the validation data specification file will be saved.')
     parser.add_argument('--save-json-test', type=str, help='Path where the test data specification file will be saved.')
     parser.add_argument('--extension', type=str, help='File extension.')
-    parser.add_argument('--split-ratio', type=list, default=[95, 5, 0], help='List composed of three integers that sets split ratios for train, valid, and test sets, respectively. For instance split_ratio')
+    parser.add_argument('--split-ratio', type=list, default=[100, 0, 0], help='List composed of three integers that sets split ratios for train, valid, and test sets, respectively. For instance split_ratio')
     parser.add_argument("--transcripts-folder", type=str,  help="Folder used for getting the transcriptions only")
     args = parser.parse_args()
 

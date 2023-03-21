@@ -6,6 +6,10 @@ YAML=$2 # Hyperparameter file specifying all needed hyperparams (you can find it
 VENV=$3 # Path to your virtual environement with SpeechBrain and all other libraries installed (not sure if conda environments work better to stick with "python -m venv")
         # this variable should have the form of "path/to/venv/bin/activate"
 
+# checkout my git-branch
+git checkout francesco
+
+
 # Activates your virtual environment
 source $VENV
 
