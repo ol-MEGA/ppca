@@ -99,6 +99,9 @@ if __name__ == "__main__":
     
     output_dir = config.data_dir+config.anon_suffix
     
+    if config.mc_rand:
+        f = open(config.data_dir + '/mcadams_rand.txt', 'w')
+
     for idx,file in enumerate(list_files):   
         print(str(idx+1),'/',len(list_files))
 
@@ -107,5 +110,9 @@ if __name__ == "__main__":
         if config.mc_rand:
             config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
 
+            f.write(output_file + ',' + str(config.mc_coeff) + '\n')
+
         anonym(file[2], output_file, winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
        
+    if config.mc_rand:
+        f.close()
