@@ -8,14 +8,11 @@ import os
 import librosa
 import numpy as np
 import scipy
+import soundfile
 import argparse
 
-def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, mcadams=0.8):    
-    filename = file[0]
-    filepath = file[1]
-    output_file = output_dir + filename + '.wav'
-    if not os.path.exists(output_dir): os.makedirs(output_dir)
-    sig, fs = librosa.load(filepath,sr=None)    
+def anonym(file, output_file, winLengthinms=20, shiftLengthinms=10, lp_order=20, mcadams=0.8):    
+    sig, fs = librosa.load(file,sr=None)    
     eps = np.finfo(np.float32).eps
     sig = sig+eps
     
@@ -39,7 +36,7 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
         # windowed mth frame (other than rectangular window)
         frame = sig[index]*win 
         # get lpc coefficients
-        a_lpc = librosa.core.lpc(frame+eps,lp_order)
+        a_lpc = librosa.core.lpc(frame+eps, order=lp_order)
         # get poles
         poles = scipy.signal.tf2zpk(np.array([1]), a_lpc)[1]
         #index of imaginary poles
@@ -79,7 +76,7 @@ def anonym(file, output_dir, winLengthinms=20, shiftLengthinms=10, lp_order=20, 
         # overlap add
         sig_rec[outindex] += frame_rec
     sig_rec = sig_rec/np.max(np.abs(sig_rec))
-    scipy.io.wavfile.write(output_file, fs, np.float32(sig_rec)) 
+    soundfile.write(output_file, np.float32(sig_rec), fs) 
     return []
 
 if __name__ == "__main__":
@@ -91,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--mc_coeff',type=float,default=0.8)
     parser.add_argument('--mc_coeff_min', type=float, default=0.5)
     parser.add_argument('--mc_coeff_max', type=float, default=0.9)
-    parser.add_argument('--mc_rand',type=bool,default=False)
+    parser.add_argument('--mc_rand', action=argparse.BooleanOptionalAction)
     parser.add_argument('--winLengthinms',type=int,default=20)
     parser.add_argument('--shiftLengthinms',type=int,default=10)
     config = parser.parse_args()
@@ -99,16 +96,23 @@ if __name__ == "__main__":
     #Load protocol file
     list_name = config.data_dir + '/wav.scp'
     list_files = np.genfromtxt(list_name,dtype='U')
+    
+    output_dir = config.data_dir+config.anon_suffix
+    
+    if config.mc_rand:
+        f = open(config.data_dir + '/mcadams_rand.txt', 'w')
 
-    if config.mc_rand: config.anon_suffix + '_rand'
-    
-    config.data_dir = config.data_dir+config.anon_suffix
-    
     for idx,file in enumerate(list_files):   
         print(str(idx+1),'/',len(list_files))
+
+        output_file = file[2].replace(config.data_dir, output_dir)
 
         if config.mc_rand:
             config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
 
-        anonym(file, output_dir=config.data_dir+'/wav/'+file[0]+'/', winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
+            f.write(output_file + ',' + str(config.mc_coeff) + '\n')
+
+        anonym(file[2], output_file, winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
        
+    if config.mc_rand:
+        f.close()

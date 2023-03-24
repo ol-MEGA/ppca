@@ -22,28 +22,40 @@ set -e
 
 #===== begin config =======
 dset=/home/jule/datasets/amicorpus
-anon_data_suffix=_anon
+anon_data_suffix=_mcadams
 
 #McAdams anonymisation configs
 n_lpc=20
 mcadams=0.8
-mcadams_rand=False
+mcadams_rand=false
+
+if $mcadams_rand; then
+    anon_data_suffix=_mcadams_rand
+fi
 
 #=========== end config ===========
+echo Anonymizing $dset ...
 
 #write wav.scp file with all wav files
-ls data/$dset/*/*.wav | awk -F'[/.]' '{print $5 " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset/wav.scp
+if [ ! -f $dset/wav.scp ]; then
+    ls $dset/*/*/*.wav | awk -F'[/]' '{print $NF " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset/wav.scp
+fi
 
+#copy content of the folder to the new folder
+#cp -r $dset $dset$anon_data_suffix
 
 #create folder that will contain the anonymised wav files
 mkdir -p $dset$anon_data_suffix
 
 #anonymise dataset 
-#python mcadams/anonymise_dir_mcadams.py --data_dir=$dset/wav.scp --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --mc_rand=$mcadams_rand    
+if $mcadams_rand; then
+    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --mc_rand
+else
+    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --no-mc_rand
+fi
 
-echo $dset
 #overwrite wav.scp file with new anonymised content
 #note sox is inclued to by-pass that files written by local/anon/anonymise_dir_mcadams.py were in float32 format and not pcm
-#ls data/$dset$anon_data_suffix/wav/*/*.wav | awk -F'[/.]' '{print $5 " sox " $0 " -t wav -r 16000 -b 16 - |"}' > data/$dset$anon_data_suffix/wav.scp
+ls $dset$anon_data_suffix/*/*/*.wav | awk -F'[/]' '{print $NF " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset$anon_data_suffix/wav.scp
 
 echo Done
