@@ -33,6 +33,9 @@ class Fbank(torch.nn.Module):
         the features.
     smoothPSD: bool (default: False)
         Whether or not to smooth and subsample the features.
+    repeatPSD: bool (default: False)
+        Whether or not to repeat the subsampled features according to 
+        the original time resolution.
     requires_grad : bool (default: False)
         Whether to allow parameters (i.e. fbank centers and
         spreads) to update during training.
@@ -87,6 +90,7 @@ class Fbank(torch.nn.Module):
         deltas=False,
         context=False,
         smoothPSD=False,
+        repeatPSD=False,
         requires_grad=False,
         sample_rate=16000,
         f_min=0,
@@ -105,6 +109,7 @@ class Fbank(torch.nn.Module):
         self.deltas = deltas
         self.context = context
         self.smoothPSD = smoothPSD
+        self.repeatPSD = repeatPSD
         self.requires_grad = requires_grad
 
         if f_max is None:
@@ -144,6 +149,8 @@ class Fbank(torch.nn.Module):
         mag = spectral_magnitude(STFT)
         if self.smoothPSD:
             mag = smooth_magnitude(mag)
+        if self.repeatPSD:
+            mag = mag.repeat_interleave(10, dim=1)
         fbanks = self.compute_fbanks(mag)
         if self.deltas:
             delta1 = self.compute_deltas(fbanks)
