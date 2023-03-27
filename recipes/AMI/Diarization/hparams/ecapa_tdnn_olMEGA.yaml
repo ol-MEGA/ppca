@@ -39,6 +39,7 @@ der_dir: !ref <save_folder>/DER
 # Spectral feature parameters
 n_mels: 80
 smoothPSD: True
+repeatPSD: False
 # left_frames: 0
 # right_frames: 0
 # deltas: False
@@ -81,6 +82,7 @@ dataloader_opts:
 compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>
     smoothPSD: !ref <smoothPSD>
+    repeatPSD: !ref <repeatPSD>
 
 multimic_beamformer: !new:speechbrain.lobes.beamform_multimic.DelaySum_Beamformer
     sampling_rate: !ref <sampling_rate>
