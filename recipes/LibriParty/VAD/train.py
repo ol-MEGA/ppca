@@ -177,7 +177,9 @@ def dataio_prep(hparams):
         )
         gt = torch.zeros(
             int(
-                hparams["example_length"] / hparams["time_resolution"]
+                np.ceil(
+                    hparams["example_length"] * (1 / hparams["time_resolution"])
+                )            
             )
         )
         for indxs in boundaries:

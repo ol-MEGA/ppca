@@ -7,6 +7,7 @@ Authors
 import torch
 import torchaudio
 import random
+import numpy as np
 
 # fade-in/fade-out definition
 fade_in = torchaudio.transforms.Fade(fade_in_len=1000, fade_out_len=0)
@@ -144,7 +145,7 @@ def add_chunk(
 def initialize_targets(wav, sample_rate, time_resolution):
     "Initializes the targets."
     target_downsampling = sample_rate * time_resolution
-    target_len = int(wav.shape[1] / (target_downsampling))
+    target_len = int(np.ceil(wav.shape[1] / (target_downsampling)))
     targets = torch.zeros(
         (wav.shape[0], target_len, wav.shape[2]), device=wav.device
     )
