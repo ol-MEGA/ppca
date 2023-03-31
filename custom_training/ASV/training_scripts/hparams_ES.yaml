@@ -75,8 +75,11 @@ classifier: !new:speechbrain.lobes.models.ECAPA_TDNN.Classifier
     input_size: 512
     out_neurons: !ref <out_n_neurons>
 
-epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounterWithStopper
     limit: !ref <number_of_epochs>
+    limit_to_stop: 5
+    limit_warmup: 30
+    direction: "min"
 
 
 augment_wavedrop: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
