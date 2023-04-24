@@ -18,7 +18,8 @@ Run the following command to train the model:
 |:-------------:|:----------------------------:| -------:| -------:| -------:| --------:| :-----------:|  :-----------:|
 | 2021-09-09 | train.yaml | 40 |  0.9518 | 0.9437 | 0.9477 | [Model](https://drive.google.com/drive/folders/1YLYGuiyuTH0D7fXOOp6cMddfQoM74o-Y?usp=sharing) | 1xV100 16GB
 | 2023-02-10 | train.yaml | 40 |  0.9471 | 0.9503 | 0.9487 | JP | 1xRTX 11GB
-| 2023-03-02 | train_olMEGA.yaml | 40 |  0.9431 | 0.8645 | 0.9021 | JP | 1xRTX 11GB
+| 2023-03-02 | train_olMEGA.yaml | 40 |  0.9364 | 0.8773 | 0.9059 | JP | 1xRTX 11GB
+| 2023-03-28 | train_olMEGArep.yaml | 40 |  0.9437 | 0.8611 | 0.9005 | JP | 1xRTX 11GB
 
 
 # Training Time

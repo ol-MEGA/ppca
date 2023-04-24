@@ -45,6 +45,11 @@ class VADBrain(sb.Brain):
         self.targets = targets
 
         if stage == sb.Stage.TRAIN:
+            if self.hparams.smoothPSD and not self.hparams.repeatPSD:
+                subsamplePSD = True
+            else:
+                subsamplePSD = False
+
             wavs, targets, lens = augment_data(
                 self.noise_datasets,
                 self.speech_datasets,
@@ -52,7 +57,7 @@ class VADBrain(sb.Brain):
                 targets,
                 lens_targ,
                 self.hparams.time_resolution,
-                self.hparams.smoothPSD,
+                subsamplePSD,
             )
             self.lens = lens
             self.targets = targets
@@ -165,7 +170,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("speech")
     @sb.utils.data_pipeline.provides("target")
     def vad_targets(speech, hparams=hparams):
-        if "smoothPSD" in hparams:
+        if hparams["smoothPSD"] and not hparams["repeatPSD"]:
             # subsample gt vector if features are smoothed (olMEGA)
             time_resolution = hparams["time_resolution"] * 10
         else:
