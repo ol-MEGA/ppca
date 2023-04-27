@@ -368,13 +368,6 @@ if __name__ == "__main__":
     params["compute_plda"].plda(embeddings_stat)
     logger.info("PLDA training completed")
 
-
-
-
-
-
-
-
     # Set paths for enrol/test embeddings
     enrol_stat_file = os.path.join(params["save_folder"], "stat_enrol.pkl")
     test_stat_file = os.path.join(params["save_folder"], "stat_test.pkl")

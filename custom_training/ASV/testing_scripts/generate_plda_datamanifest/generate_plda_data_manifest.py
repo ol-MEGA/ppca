@@ -62,12 +62,12 @@ def read_scp(filename, data_dir, data_type, sep):
 
     return wavs, spks
 
-def get_spk_data(data_dir, sep):
-    onlyfiles = [f for f in listdir(data_dir) if isfile(join(data_dir, f))]
+def get_spk_data(data_dir, sep, extension="flac"):
+    onlyfiles = [os.path.join(dp, f) for dp, dn, filenames in os.walk(data_dir) for f in filenames if os.path.splitext(f)[1] == f'.{extension}']
     wavs, spks = [], []
     for file in onlyfiles:
         wavs.append(file)  
-        spks.append(file.split(sep)[0])
+        spks.append(file.split("/")[-1].split(sep)[0])
     return wavs, spks
 
 if __name__ == "__main__":
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--data-dir', type=str, help=' Path to the wav files')
     parser.add_argument('--wav-scp-file', default=None, type=str, help=' Path to the wav.scp file')
     parser.add_argument('--save-json', type=str, help='Path where the validation data specification file will be saved.')   
-    parser.add_argument('--data-type', type=str, help=' Input data type:orig or anonymized.')
+    parser.add_argument('--data-type', type=str, help=' Input data type:clean or anon.')
     parser.add_argument('--spk-sep', type=str, help='Spk separator')
 
     args = parser.parse_args()
@@ -88,5 +88,5 @@ if __name__ == "__main__":
        data, spks = read_scp(args.wav_scp_file, args.data_dir, args.data_type, args.spk_sep)
     else:
        data, spks = get_spk_data(args.data_dir, args.spk_sep)
- 
+
     create_json(data, spks, args.save_json)

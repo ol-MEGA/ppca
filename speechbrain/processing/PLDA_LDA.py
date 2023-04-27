@@ -670,7 +670,7 @@ def fast_PLDA_scoring(
     scaling_factor=1.0,
     check_missing=True,
 ):
-    """Compute the PLDA scores between to sets of vectors. The list of
+    """Compute the PLDA scores between two sets of vectors. The list of
     trials to perform is given in an Ndx object. PLDA matrices have to be
     pre-computed. i-vectors/x-vectors are supposed to be whitened before.
 
