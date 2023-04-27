@@ -176,6 +176,7 @@ def get_verification_scores(veri_test, train_obj, enrol_obj, test_obj):
         test = torch.from_numpy(test_obj.stat1[test_idx])
 
         if "score_norm" in params:
+            print("__Using score normlization__\n")
             # Getting norm stats for enrol impostors
             enrol_rep = enrol.repeat(train_cohort.shape[0], 1, 1)
             score_e_c = similarity(enrol_rep, train_cohort)
@@ -253,7 +254,7 @@ def dataio_prep(params):  # TODO === Need to change the data IO function ===
         json_path=params["train_data"], replacements={"data_root": data_folder_tr},
     )
 
-    if params["score_norm"]:
+    if "score_norm" in params:
         train_data = train_data.filtered_sorted(
             sort_key="length", select_n=params["n_train_snts"]
         )
@@ -443,3 +444,5 @@ if __name__ == "__main__":
         torch.tensor(positive_scores), torch.tensor(negative_scores)
     )
     logger.info("minDCF=%f", min_dcf * 100)
+
+    # EER( %)=2.415680 with libri_dev_trials_f and no score normalization same with it (weird!)
