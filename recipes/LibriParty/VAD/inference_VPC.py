@@ -5,12 +5,14 @@ Apply pretrained VAD to VPC data
 import os
 from pathlib import Path
 import click
+import shutil
 import matplotlib.pyplot as plt
 import numpy as np
 import soundfile as sf
 import torch
 from mms_msg.databases.single_speaker.vpc.database import VPC
 
+SAMPLERATE = 16000
 
 def save_boundaries(boundaries, save_path=None, print_boundaries=True, audio_file=None
 ):
@@ -118,8 +120,7 @@ def main(json_path, database_path):
     if show_plots:
         fig, axs = plt.subplots(4, 4, figsize=(16, 12))
 
-    #for s, subset in enumerate(dataset_names):
-    for s, subset in enumerate({'vctk_dev', 'vctk_test'}):
+    for s, subset in enumerate(dataset_names):
         dset = db.get_dataset(subset)
         print('*** running VAD on: ', subset)
         
@@ -139,7 +140,19 @@ def main(json_path, database_path):
                 )
 
             # Print the output
-            save_boundaries(boundaries, save_path=save_path, print_boundaries=False, audio_file=filename)
+            #save_boundaries(boundaries, save_path=save_path, print_boundaries=False, audio_file=filename)
+
+            # cut speech signal and write to new file
+            output_path, filename_out = os.path.split(filename)
+            output_path = output_path.replace('VPC', 'VPC_cutted')
+            Path(output_path).mkdir(parents=True, exist_ok=True)
+            if boundaries.shape[0] == 0:
+                shutil.copyfile(filename, os.path.join(output_path, filename_out))
+            else:
+                start = int(np.floor(boundaries[0, 0].numpy()*SAMPLERATE))
+                end = int(np.ceil(boundaries[-1, 1].numpy()*SAMPLERATE))
+                speech, _ = sf.read(filename, start=start, stop=end)
+                sf.write(os.path.join(output_path, filename_out), speech, SAMPLERATE)
 
             if show_plots:
                 signal, fs = sf.read(filename)
