@@ -140,11 +140,11 @@ def main(json_path, database_path):
                 )
 
             # Print the output
-            #save_boundaries(boundaries, save_path=save_path, print_boundaries=False, audio_file=filename)
+            save_boundaries(boundaries, save_path=save_path, print_boundaries=False, audio_file=filename)
 
             # cut speech signal and write to new file
             output_path, filename_out = os.path.split(filename)
-            output_path = output_path.replace('VPC', 'VPC_cutted')
+            output_path = output_path.replace('wav', 'wav_cutted')
             Path(output_path).mkdir(parents=True, exist_ok=True)
             if boundaries.shape[0] == 0:
                 shutil.copyfile(filename, os.path.join(output_path, filename_out))
