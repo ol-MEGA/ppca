@@ -384,8 +384,9 @@ def smooth_magnitude(mag, hop_len=12.5, tau=125):
 
     # recursive averaging
     mag_smoothed = torch.zeros_like(mag)
-    for idx in range(n_frames):
-        mag_smoothed[:, idx, :] = alpha * mag_smoothed[:, idx, :] + (1 - alpha) * mag[:, idx, :]
+    mag_smoothed[:, 0, :] = (1 - alpha) * mag[:, 0, :] # init
+    for idx in range(1, n_frames):
+        mag_smoothed[:, idx, :] = alpha * mag_smoothed[:, idx-1, :] + (1 - alpha) * mag[:, idx, :]
 
     # store a frame every 125 ms, i.e. every 10th frame (for window length of 25ms)    
     mag_smoothed = mag_smoothed[:, ::10, :]
