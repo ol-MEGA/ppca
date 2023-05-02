@@ -10,8 +10,8 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 
 # Folders and train_log file
 data_folder_tr: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022/baseline/corpora
-data_folder_test: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022/baseline
-output_folder: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/run_plda_verification/results/test_ecapa_cosine_scorenorm
+data_folder_test: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022
+output_folder: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/run_plda_verification/results/libri_test_trials_f
 save_folder: !ref <output_folder>/save/
 device: 'cuda:0'
 
@@ -21,7 +21,7 @@ device: 'cuda:0'
 # VoxCeleb1-E (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt.
 # VoxCeleb1-E and VoxCeleb1-H lists are drawn from the VoxCeleb1 training set.
 # Therefore you cannot use any files in VoxCeleb1 for training if you are using these lists for testing.
-verification_file: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/trials_files/libri_dev_trials_f/trials
+verification_file: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/trials_files/libri_test_trials_f/trials
 
 # Here, the pretrained embedding model trained with train_speaker_embeddings.py hparams/train_ecapa_tdnn.yaml
 # is downloaded from the speechbrain HuggingFace repository.
@@ -31,8 +31,8 @@ pretrain_path: speechbrain/spkrec-ecapa-voxceleb
 
 # csv files
 train_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/librispeech_360_clean.json
-enrol_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_dev_enrolls.json
-test_data:  /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_dev_trials_f.json
+enrol_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_test_enrolls.json
+test_data:  /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_test_trials_f.json
 
 batch_size: 8
 #score_norm: s-norm  # z-norm t-norm s-norm (uncomment to enable it)
