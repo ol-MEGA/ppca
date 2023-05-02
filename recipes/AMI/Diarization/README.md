@@ -17,11 +17,15 @@ The script assumes the pre-trained model. Please refer to speechbrain/recipes/Vo
 ## Best performance in terms of Diarization Error Rate (DER).
 The forgiveness collar of 0.25 sec is used and overlaps are ignored while evaluation.
 
-| System | Mic. | Orcl. (Dev) | Orcl. (Eval) | Est. (Dev) | Est. (Eval)
-|----------- | ------------ | ------ |------| ------| ------ |
-| ECAPA-TDNN + SC | HeadsetMix | 2.02% | 1.78% | 2.43% | 4.03% |
-| ECAPA-TDNN + SC | LapelMix | 2.17% | 2.36% | 2.34% | 2.57% |
-| ECAPA-TDNN + SC | Array-1 | 2.95% | 2.75% | 3.07% | 3.30% |
+| Date | System | Mic. | Orcl. (Dev) | Orcl. (Eval) | Est. (Dev) | Est. (Eval)
+| ---- |----------- | ------------ | ------ |------| ------| ------ |
+| 2021 | ECAPA-TDNN + SC | HeadsetMix | 2.02% | 1.78% | 2.43% | 4.03% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix | 1.94% | 2.02% | 2.02% | 2.04% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams | 3.00% | 3.33% | 3.65% | 4.22% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGA | 48.83% | 43.43% | 47.57% | 39.52% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGArep | 5.49% | 5.16% | 7.66% | 6.69% |
+| 2021 | ECAPA-TDNN + SC | LapelMix | 2.17% | 2.36% | 2.34% | 2.57% |
+| 2021 | ECAPA-TDNN + SC | Array-1 | 2.95% | 2.75% | 3.07% | 3.30% |
 
 For the complete set of analyses, please refer to our paper given below.
 
