@@ -9,7 +9,7 @@ import torch
 from speechbrain.processing.features import (
     STFT,
     spectral_magnitude,
-    smooth_magnitude,
+    smooth_power,
     Filterbank,
     DCT,
     Deltas,
@@ -18,6 +18,7 @@ from speechbrain.processing.features import (
 from speechbrain.nnet.CNN import GaborConv1d
 from speechbrain.nnet.normalization import PCEN
 from speechbrain.nnet.pooling import GaussianLowpassPooling
+import warnings
 
 
 class Fbank(torch.nn.Module):
@@ -51,6 +52,8 @@ class Fbank(torch.nn.Module):
     hop_length : float (default: 10)
         Length (in ms) of the hop of the sliding window used to compute
         the STFT.
+    tau_smooth : float (default: 125)
+        Smoothing time constant (in ms) used to smooth the PSD if smoothPSD is True.
     n_fft : int (default: 400)
         Number of samples to use in each stft.
     n_mels : int (default: 40)
@@ -104,6 +107,7 @@ class Fbank(torch.nn.Module):
         right_frames=5,
         win_length=25,
         hop_length=10,
+        tau_smooth = 125,
     ):
         super().__init__()
         self.deltas = deltas
@@ -111,6 +115,11 @@ class Fbank(torch.nn.Module):
         self.smoothPSD = smoothPSD
         self.repeatPSD = repeatPSD
         self.requires_grad = requires_grad
+
+        if self.repeatPSD or self.smoothPSD:
+            self.hop_length = hop_length
+            self.tau_smooth = tau_smooth
+            self.subsample_factor = int(tau_smooth / hop_length)
 
         if f_max is None:
             f_max = sample_rate / 2
@@ -148,9 +157,9 @@ class Fbank(torch.nn.Module):
         STFT = self.compute_STFT(wav)
         mag = spectral_magnitude(STFT)
         if self.smoothPSD:
-            mag = smooth_magnitude(mag)
+            mag = smooth_power(mag, hop_len=self.hop_length, tau=self.tau_smooth)
         if self.repeatPSD:
-            mag = mag.repeat_interleave(10, dim=1)
+            mag = mag.repeat_interleave(self.subsample_factor, dim=1)
         fbanks = self.compute_fbanks(mag)
         if self.deltas:
             delta1 = self.compute_deltas(fbanks)
@@ -454,7 +463,8 @@ class Leaf(torch.nn.Module):
 
 
 class smoothedPSD(torch.nn.Module):
-    """Generate features for input to the speech pipeline.
+    """Generate features for input to the speech pipeline: smoothed 
+    and subsampled PSD
 
     Arguments
     ---------
@@ -471,6 +481,8 @@ class smoothedPSD(torch.nn.Module):
     hop_length : float (default: 12.5)
         Length (in ms) of the hop of the sliding window used to compute
         the STFT.
+    tau_smooth : float (default: 125)
+        Smoothing time constant (in ms) used to smooth the PSD if smoothPSD is True.
     n_fft : int (default: 512)
         Number of samples to use in each stft.
     left_frames : int (default: 5)
@@ -495,6 +507,7 @@ class smoothedPSD(torch.nn.Module):
         sample_rate=16000,
         win_length=25,
         hop_length=12.5,
+        tau_smooth = 125,
         n_fft=512,
         left_frames=5,
         right_frames=5,
@@ -502,6 +515,16 @@ class smoothedPSD(torch.nn.Module):
         super().__init__()
         self.deltas = deltas
         self.context = context
+        self.hop_length = hop_length
+        self.tau_smooth = tau_smooth
+
+        n_fft_des = (sample_rate * win_length / 1000 - 1).bit_length()
+        if n_fft < n_fft_des:
+            warnings.warn(
+                f"The input fft size of {n_fft} was too small for the given win_length,"
+                " increased to {n_fft_des}"
+            )
+            n_fft = n_fft_des
 
         self.compute_STFT = STFT(
             sample_rate=sample_rate,
@@ -523,12 +546,12 @@ class smoothedPSD(torch.nn.Module):
             A batch of audio signals to transform to features.
         """
         STFT = self.compute_STFT(wav)
-        mag = spectral_magnitude(STFT)
-        mag_smoothed = smooth_magnitude(mag)
+        psd_sig = spectral_magnitude(STFT)
+        psd_smoothed = smooth_power(psd_sig, hop_len=self.hop_length, tau=self.tau_smooth)
         if self.deltas:
-            delta1 = self.compute_deltas(mag_smoothed)
+            delta1 = self.compute_deltas(psd_smoothed)
             delta2 = self.compute_deltas(delta1)
-            mag_smoothed = torch.cat([mag_smoothed, delta1, delta2], dim=2)
+            psd_smoothed = torch.cat([psd_smoothed, delta1, delta2], dim=2)
         if self.context:
-            mag_smoothed = self.context_window(mag_smoothed)
-        return mag_smoothed
+            psd_smoothed = self.context_window(psd_smoothed)
+        return psd_smoothed

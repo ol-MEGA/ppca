@@ -21,13 +21,13 @@
 set -e
 
 #===== begin config =======
-dset=/home/jule/datasets/amicorpus
+dset=$1 # path/to/amicorpus
 anon_data_suffix=_mcadams
 
 #McAdams anonymisation configs
 n_lpc=20
 mcadams=0.8
-mcadams_rand=false
+mcadams_rand=true
 
 if $mcadams_rand; then
     anon_data_suffix=_mcadams_rand
@@ -40,9 +40,6 @@ echo Anonymizing $dset ...
 if [ ! -f $dset/wav.scp ]; then
     ls $dset/*/*/*.wav | awk -F'[/]' '{print $NF " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset/wav.scp
 fi
-
-#copy content of the folder to the new folder
-#cp -r $dset $dset$anon_data_suffix
 
 #create folder that will contain the anonymised wav files
 mkdir -p $dset$anon_data_suffix

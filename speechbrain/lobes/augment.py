@@ -20,7 +20,8 @@ from speechbrain.processing.speech_augmentation import (
     DropChunk,
     AddBabble,
     AddNoise,
-    AddReverb,
+    AddReverb,    
+    McAdamsCoeff,
 )
 from speechbrain.utils.torch_audio_backend import check_torchaudio_backend
 
@@ -551,3 +552,72 @@ def _prepare_csv(folder, filelist, csv_file, max_length=None):
                         )
     finally:
         sb.utils.distributed.ddp_barrier()
+
+class anonymizeMcAdams(torch.nn.Module):
+    """Anonymization of the Speakers identity using the McAdams coefficient.
+
+    Arguments
+    ---------
+    sample_rate : int (default: 160000)
+        Sampling rate for the input waveforms.
+    win_length : float (default: 20)
+        Length (in ms) of the sliding window used to compute the LPC analysis.
+    hop_length : float (default: 10)
+        Length (in ms) of the hop of the sliding window used to compute
+        the STFT.
+    lp_order : float (default: 20)
+        Order of the linear filter.
+    mcadams : float (default: 0.8)
+        McAdams coefficient for pseudoanonymization.
+    mcadams_min : float (default: 0.5)
+        Minimum value of mcadams coefficient.
+    mcadams_max : float (default: 0.9)
+        Maximum value of mcadams coefficient.
+    random_coeff : bool (default: False)
+        If False (default), the function assumes a fixed McAdams coefficient, 
+        otherwise a random number between mcadams_min and mcadams_max is choosen.
+
+    Example
+    -------
+    >>> import torch
+    >>> inputs = torch.randn([10, 16000])
+    >>> anon = anonymizeMcAdams()
+    >>> inputs_an = anon(inputs)
+    >>> inputs_an.shape
+    torch.Size([10, 16000])
+    """
+
+    def __init__(
+        self,
+        sample_rate=16000,
+        win_length=20,
+        hop_length=10,
+        lp_order=20,
+        mcadams=0.8,
+        mcadams_min=0.5,
+        mcadams_max=0.9,
+        random_coeff=False,
+    ):
+        super().__init__()
+        self.apply_McAdams = McAdamsCoeff(
+            sample_rate=sample_rate, 
+            win_length=win_length, 
+            hop_length=hop_length, 
+            lp_order=lp_order, 
+            mcadams=mcadams, 
+            mcadams_min=mcadams_min, 
+            mcadams_max = mcadams_max, 
+            random_coeff = random_coeff,
+        )
+
+    def forward(self, waveforms):
+        """Returns pseudoanonymized waveforms from the input waveforms.
+
+        Arguments
+        ---------
+        wav : tensor
+            A batch of audio signals to pseudoanonymize.
+        """
+        with torch.no_grad():
+            waveforms = self.apply_McAdams(waveforms)
+        return waveforms

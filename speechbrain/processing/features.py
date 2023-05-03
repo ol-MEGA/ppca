@@ -355,13 +355,14 @@ def spectral_magnitude(stft, power=1, log=False, eps=1e-14):
         return torch.log(spectr + eps)
     return spectr
 
-def smooth_magnitude(mag, hop_len=12.5, tau=125):
-    """Returns the smoothed magnitude with smoothing time tau
-    by using a first order low-pass filter and subsampling of 10.
+def smooth_power(psd, hop_len=12.5, tau=125):
+    """Returns the smoothed PSD with smoothing time tau
+    by using a first order low-pass filter and subsampling of 
+    10, i.e. tau divided by the hop length.
 
     Arguments
     ---------
-    mag : torch.Tensor
+    psd : torch.Tensor
         A tensor,  magnitude of a complex spectrogram,
         output from the spectral_magnitude function.
     hop_len : int
@@ -372,25 +373,28 @@ def smooth_magnitude(mag, hop_len=12.5, tau=125):
     Example
     -------
     >>> a = torch.randn([[3, 200, 257]])
-    >>> smooth_magnitude(a, tau=125)
+    >>> smooth_power(a, tau=125)
     tensor([3, 20, 257])
     """
 
     # compute time constant
-    alpha = math.exp(-hop_len / tau)
+    subsample_factor = int(tau / hop_len)
+    alpha = math.exp(-1 / subsample_factor)
 
     # number of frames
-    n_frames = mag.shape[1]
+    n_frames = psd.shape[1]
 
     # recursive averaging
-    mag_smoothed = torch.zeros_like(mag)
-    for idx in range(n_frames):
-        mag_smoothed[:, idx, :] = alpha * mag_smoothed[:, idx, :] + (1 - alpha) * mag[:, idx, :]
+    psd_smoothed = torch.zeros_like(psd)
+    psd_smoothed[:, 0, :] = (1 - alpha) * psd[:, 0, :] # init
+    for idx in range(1, n_frames):
+        psd_smoothed[:, idx, :] = alpha * psd_smoothed[:, idx-1, :] + (1 - alpha) * psd[:, idx, :]
 
-    # store a frame every 125 ms, i.e. every 10th frame (for window length of 25ms)    
-    mag_smoothed = mag_smoothed[:, ::10, :]
+    # store a frame every tau=125 ms, i.e. every 10th frame 
+    # (for hop length of 12.5ms)    
+    psd_smoothed = psd_smoothed[:, ::subsample_factor, :]
 
-    return mag_smoothed
+    return psd_smoothed
 
 
 class Filterbank(torch.nn.Module):

@@ -3,6 +3,7 @@
 # Embeddings: Deep embedding
 # Clustering Technique: Spectral clustering
 # Authors: Nauman Dawalatabad 2020
+#          Jule Pohlhausen 2023
 # #################################################
 
 seed: 1234
@@ -15,7 +16,7 @@ data_folder: !PLACEHOLDER # e.g., /path/to/amicorpus/
 # Download manual annotations from: http://groups.inf.ed.ac.uk/ami/download/
 manual_annot_folder: !PLACEHOLDER # e.g., /path/to/ami_public_manual_1.6.2/
 
-output_folder: results/ami/ecapa/
+output_folder: results/ami/ecapa/olMEGA
 save_folder: !ref <output_folder>/save
 skip_prep: False
 
@@ -37,6 +38,8 @@ der_dir: !ref <save_folder>/DER
 
 # Spectral feature parameters
 n_mels: 80
+smoothPSD: True
+repeatPSD: False
 # left_frames: 0
 # right_frames: 0
 # deltas: False
@@ -76,14 +79,10 @@ sampling_rate: 16000
 dataloader_opts:
     batch_size: !ref <batch_size>
 
-apply_anon: True
-random_coeff: False
-anonymize_McAdams: !new:speechbrain.lobes.augment.anonymizeMcAdams
-    sample_rate: !ref <sampling_rate>
-    random_coeff: !ref <random_coeff>
-
 compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>
+    smoothPSD: !ref <smoothPSD>
+    repeatPSD: !ref <repeatPSD>
 
 multimic_beamformer: !new:speechbrain.lobes.beamform_multimic.DelaySum_Beamformer
     sampling_rate: !ref <sampling_rate>
