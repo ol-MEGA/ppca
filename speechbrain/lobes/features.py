@@ -462,6 +462,7 @@ class Leaf(torch.nn.Module):
         return in_channels
 
 
+'''For experiment in the future
 class smoothedPSD(torch.nn.Module):
     """Generate features for input to the speech pipeline: smoothed 
     and subsampled PSD
@@ -555,3 +556,4 @@ class smoothedPSD(torch.nn.Module):
         if self.context:
             psd_smoothed = self.context_window(psd_smoothed)
         return psd_smoothed
+'''
