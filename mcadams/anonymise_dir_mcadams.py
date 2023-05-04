@@ -10,6 +10,7 @@ import numpy as np
 import scipy
 import soundfile
 import argparse
+from tqdm import tqdm
 
 def anonym(file, output_file, winLengthinms=20, shiftLengthinms=10, lp_order=20, mcadams=0.8):    
     sig, fs = librosa.load(file,sr=None)    
@@ -100,17 +101,18 @@ if __name__ == "__main__":
     output_dir = config.data_dir+config.anon_suffix
     
     if config.mc_rand:
-        f = open(config.data_dir + '/mcadams_rand.txt', 'w')
+        f = open(output_dir + '/mcadams_rand.txt', 'w')
 
-    for idx,file in enumerate(list_files):   
-        print(str(idx+1),'/',len(list_files))
-
+    for idx,file in enumerate(tqdm(list_files)):   
+        # change outpt dirname and create folders
         output_file = file[2].replace(config.data_dir, output_dir)
+        os.makedirs(os.path.split(output_file)[0], exist_ok=True)
 
         if config.mc_rand:
+            np.random.seed(1234)
             config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
 
-            f.write(output_file + ',' + str(config.mc_coeff) + '\n')
+            f.write(output_file + ', ' + str(config.mc_coeff) + '\n')
 
         anonym(file[2], output_file, winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
        
