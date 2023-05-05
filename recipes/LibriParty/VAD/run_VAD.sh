@@ -21,6 +21,7 @@ sample_rate=16000
 n_mels=40 #80, 40, 20, 10
 time_factor=1 #1, 4, 8, 12
 smoothPSD=true
+repeatPSD=true
 win_length=$((25*time_factor))
 hop_length=$((10*time_factor))
 n_fft=$((sample_rate*win_length/1000))
@@ -31,7 +32,7 @@ if $smoothPSD; then
     echo Running VAD with $n_mels mels and smoothed PSD ...
 
     python train.py hparams/train_olMEGA.yaml --data_folder=$data_folder --musan_folder=$musan_folder --commonlanguage_folder=$commonlanguage_folder --open_rir_folder=$open_rir_folder \
-        --skip_prep=$skip_prep --n_mels=$n_mels --device=cuda:1
+        --skip_prep=$skip_prep --n_mels=$n_mels --repeatPSD=$repeatPSD --device=cuda:1
 else
     echo Running VAD with $n_mels mels, win_length $win_length ms, hop_length $hop_length ms, nfft $n_fft ...
 
