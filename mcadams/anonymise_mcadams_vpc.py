@@ -31,45 +31,52 @@ if __name__ == "__main__":
     config = parser.parse_args()
             
     np.random.seed(1234)
-    
-    output_dir = config.data_dir+config.anon_suffix
-    os.makedirs(output_dir, exist_ok=True)
 
     # get VPC meeting mix data
     db = JsonDatabase(config.json_path)
-    dset = db.get_dataset(config.data_dir.split('/')[-1])
-    
-    f = open(output_dir + '/mcadams_anon.txt', 'w')
+    dataset_names = db.dataset_names
+
+    # init summary output file    
+    savefile = 'vpc_mix_anon_mcadams.txt'
+    if config.mc_rand:
+        savefile = savefile.replace('mcadams', 'mcadams_rand')
+    f = open(os.path.join(config.data_dir, savefile), 'w')
     f.write("#utteranceID, speakerID, duration, offset, scalingFactor, McAdamsCoeff, conversationID\n")
 
-    for idx in tqdm(range(len(dset))): 
-        ex = dset[idx]
-        conversationID = ex['example_id']
-        filename = os.path.join(config.data_dir, conversationID + '.wav')
+    for sub_set in dataset_names:
+        dset = db.get_dataset(sub_set)
 
-        # change outpt dirname and create folders
-        output_file = os.path.join(output_dir, conversationID + '.wav')
+        output_dir = os.path.join(config.data_dir, sub_set + config.anon_suffix)
+        os.makedirs(output_dir, exist_ok=True)
 
-        if config.mc_rand:
-            config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
-        
-        # saves infos: utteranceID, speakerID, duration, offset, Scaling factor, McAdams Coeff., ConversationID
-        utteranceIDs = ex['source_id']
-        speakerIDs = ex['speaker_id']
-        scale_factors = ex['log_weights']
-        num_samples = ex['num_samples']['original_source']
-        offset = ex['offset']['original_source']
-        for u, s, n, o, w in zip(utteranceIDs, speakerIDs, num_samples, offset, scale_factors):
-            line =  (
-                u + ", " + s + ", " + str(n) + ", " + str(o) + ", " + str(w) 
-                + ", " +
-                str(config.mc_coeff)
-                + ", " +
-                conversationID
-                + '\n'
-            )
-            f.write(line)
-        
-        anonym(filename[2], output_file, winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
+        for idx in tqdm(range(len(dset))): 
+            ex = dset[idx]
+            conversationID = ex['example_id']
+            filename = os.path.join(config.data_dir, conversationID + '.wav')
+
+            # change outpt dirname and create folders
+            output_file = os.path.join(output_dir, conversationID + '.wav')
+
+            if config.mc_rand:
+                config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
+            
+            # saves infos: utteranceID, speakerID, duration, offset, Scaling factor, McAdams Coeff., ConversationID
+            utteranceIDs = ex['source_id']
+            speakerIDs = ex['speaker_id']
+            scale_factors = ex['log_weights']
+            num_samples = ex['num_samples']['original_source']
+            offset = ex['offset']['original_source']
+            for u, s, n, o, w in zip(utteranceIDs, speakerIDs, num_samples, offset, scale_factors):
+                line =  (
+                    u + ", " + s + ", " + str(n) + ", " + str(o) + ", " + str(w) 
+                    + ", " +
+                    str(config.mc_coeff)
+                    + ", " +
+                    conversationID
+                    + '\n'
+                )
+                f.write(line)
+            
+            #anonym(filename, output_file, winLengthinms=config.winLengthinms, shiftLengthinms=config.shiftLengthinms, lp_order=config.n_coeffs, mcadams=config.mc_coeff)
        
     f.close()
