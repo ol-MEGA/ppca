@@ -36,7 +36,6 @@ from speechbrain.processing.PLDA_LDA import StatObject_SB
 from speechbrain.processing import diarization as diar
 from speechbrain.utils.DER import DER
 from speechbrain.dataio.dataio import read_audio
-from speechbrain.dataio.dataio import read_audio_multichannel
 
 np.random.seed(1234)
 
@@ -74,7 +73,7 @@ def compute_embeddings(wavs, lens):
     return emb
 
 
-def embedding_computation_loop(split, set_loader, stat_file):
+def embedding_computation_loop(set_loader, stat_file):
     """Extracts embeddings for a given dataset loader."""
 
     # Note: We use speechbrain.processing.PLDA_LDA.StatObject_SB type to store embeddings.
@@ -158,7 +157,7 @@ def prepare_subset_json(full_meta_data, rec_id, out_meta_file):
         json.dump(subset, json_f, indent=2)
 
 
-def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
+def diarize_dataset(full_meta, subset, n_lambdas, pval, n_neighbors=10):
     """This function diarizes all the recordings in a given dataset. It performs
     computation of embedding and clusters them using spectral clustering (or other backends).
     The output speaker boundary file is stored in the RTTM format.
@@ -168,7 +167,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
     # spkr_info is essential to obtain number of speakers from groundtruth.
     if params["oracle_n_spkrs"] is True:
         full_ref_rttm_file = (
-            params["ref_rttm_dir"] + "/fullref_ami_" + split_type + ".rttm"
+            params["ref_rttm_dir"] + "/fullref_vpc_" + subset + ".rttm"
         )
 
         rttm = diar.read_rttm(full_ref_rttm_file)
@@ -182,12 +181,12 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
     A = [word.rstrip().split("_")[0] for word in all_keys]
     all_rec_ids = list(set(A[1:]))
     all_rec_ids.sort()
-    split = "AMI_" + split_type
+    split = "VPC_" + subset
     i = 1
 
     # Setting eval modality.
     params["embedding_model"].eval()
-    msg = "Diarizing " + split_type + " set"
+    msg = "Diarizing " + subset
     logger.info(msg)
 
     if len(all_rec_ids) <= 0:
@@ -200,7 +199,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
         # This tag will be displayed in the log.
         tag = (
             "["
-            + str(split_type)
+            + str(subset)
             + ": "
             + str(i)
             + "/"
@@ -218,14 +217,14 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
             os.makedirs(os.path.join(params["embedding_dir"], split))
 
         # File to store embeddings.
-        emb_file_name = rec_id + "." + params["mic_type"] + ".emb_stat.pkl"
+        emb_file_name = rec_id + "." + ".emb_stat.pkl"
         diary_stat_emb_file = os.path.join(
             params["embedding_dir"], split, emb_file_name
         )
 
         # Prepare a metadata (json) for one recording. This is basically a subset of full_meta.
         # Lets keep this meta-info in embedding directory itself.
-        json_file_name = rec_id + "." + params["mic_type"] + ".json"
+        json_file_name = rec_id + ".json"
         meta_per_rec_file = os.path.join(
             params["embedding_dir"], split, json_file_name
         )
@@ -243,9 +242,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
         params["mean_var_norm_emb"].to(run_opts["device"])
 
         # Compute Embeddings.
-        diary_obj = embedding_computation_loop(
-            "diary", diary_set_loader, diary_stat_emb_file
-        )
+        diary_obj = embedding_computation_loop(diary_set_loader, diary_stat_emb_file)
 
         # Adding tag for directory path.
         type_of_num_spkr = "oracle" if params["oracle_n_spkrs"] else "est"
@@ -257,7 +254,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
             + params["backend"]
         )
         out_rttm_dir = os.path.join(
-            params["sys_rttm_dir"], params["mic_type"], split, tag
+            params["sys_rttm_dir"], split, tag
         )
         if not os.path.exists(out_rttm_dir):
             os.makedirs(out_rttm_dir)
@@ -310,8 +307,8 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
             with open(f, "r") as indi_rttm_file:
                 shutil.copyfileobj(indi_rttm_file, cat_file)
 
-    msg = "The system generated RTTM file for %s set : %s" % (
-        split_type,
+    msg = "The system generated RTTM file for %s : %s" % (
+        subset,
         concate_rttm_file,
     )
     logger.debug(msg)
@@ -319,7 +316,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
     return concate_rttm_file
 
 
-def dev_pval_tuner(full_meta, split_type):
+def dev_pval_tuner(dev_meta, subset):
     """Tuning p_value for affinity matrix.
     The p_value used so that only p% of the values in each row is retained.
     """
@@ -331,10 +328,10 @@ def dev_pval_tuner(full_meta, split_type):
     for p_v in prange:
         # Process whole dataset for value of p_v.
         concate_rttm_file = diarize_dataset(
-            full_meta, split_type, n_lambdas, p_v
+            dev_meta, subset, n_lambdas, p_v
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_ami_dev.rttm")
+        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -356,7 +353,7 @@ def dev_pval_tuner(full_meta, split_type):
     return tuned_p_val
 
 
-def dev_ahc_threshold_tuner(full_meta, split_type):
+def dev_ahc_threshold_tuner(full_meta, subset):
     """Tuning threshold for affinity matrix. This function is called when AHC is used as backend."""
 
     DER_list = []
@@ -368,10 +365,10 @@ def dev_ahc_threshold_tuner(full_meta, split_type):
     for p_v in prange:
         # Process whole dataset for value of p_v.
         concate_rttm_file = diarize_dataset(
-            full_meta, split_type, n_lambdas, p_v
+            full_meta, subset, n_lambdas, p_v
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_ami_dev.rttm")
+        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -391,7 +388,7 @@ def dev_ahc_threshold_tuner(full_meta, split_type):
     return tuned_p_val
 
 
-def dev_nn_tuner(full_meta, split_type):
+def dev_nn_tuner(full_meta, subset):
     """Tuning n_neighbors on dev set. Assuming oracle num of speakers.
     This is used when nn based affinity is selected.
     """
@@ -406,10 +403,10 @@ def dev_nn_tuner(full_meta, split_type):
 
         # Process whole dataset for value of n_lambdas.
         concate_rttm_file = diarize_dataset(
-            full_meta, split_type, n_lambdas, pval, nn
+            full_meta, subset, n_lambdas, pval, nn
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_ami_dev.rttm")
+        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -429,7 +426,7 @@ def dev_nn_tuner(full_meta, split_type):
     return tunned_nn[0]
 
 
-def dev_tuner(full_meta, split_type):
+def dev_tuner(full_meta, subset):
     """Tuning n_components on dev set. Used for nn based affinity matrix.
     Note: This is a very basic tunning for nn based affinity.
     This is work in progress till we find a better way.
@@ -441,10 +438,10 @@ def dev_tuner(full_meta, split_type):
 
         # Process whole dataset for value of n_lambdas.
         concate_rttm_file = diarize_dataset(
-            full_meta, split_type, n_lambdas, pval
+            full_meta, subset, n_lambdas, pval
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_ami_dev.rttm")
+        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -463,7 +460,6 @@ def dev_tuner(full_meta, split_type):
 
 def dataio_prep(hparams, json_file):
     """Creates the datasets and their data processing pipelines.
-    This is used for multi-mic processing.
     """
 
     # 1. Datasets
@@ -472,24 +468,12 @@ def dataio_prep(hparams, json_file):
         json_path=json_file, replacements={"data_root": data_folder},
     )
 
-    # 2. Define audio pipeline.
-    if params["mic_type"] == "Array1":
-        # Multi-mic (Microphone Array)
-        @sb.utils.data_pipeline.takes("wav")
-        @sb.utils.data_pipeline.provides("sig")
-        def audio_pipeline(wav):
-            mics_signals = read_audio_multichannel(wav).unsqueeze(0)
-            sig = params["multimic_beamformer"](mics_signals)
-            sig = sig.squeeze()
-            return sig
-
-    else:
-        # Single microphone
-        @sb.utils.data_pipeline.takes("wav")
-        @sb.utils.data_pipeline.provides("sig")
-        def audio_pipeline(wav):
-            sig = read_audio(wav)
-            return sig
+    # 2. Define audio pipeline. Single microphone
+    @sb.utils.data_pipeline.takes("wav")
+    @sb.utils.data_pipeline.provides("sig")
+    def audio_pipeline(wav):
+        sig = read_audio(wav)
+        return sig
 
     sb.dataio.dataset.add_dynamic_item([dataset], audio_pipeline)
 
@@ -553,7 +537,7 @@ if __name__ == "__main__":  # noqa: C901
     params["embedding_model"].eval()
     params["embedding_model"].to(run_opts["device"])
 
-    # AMI Dev Set: Tune hyperparams on dev set.
+    # VPC Dev Set: Tune hyperparams on libri dev set.
     # Read the meta-data file for dev set generated during data_prep
     dev_meta_file = params["dev_meta_file"]
     with open(dev_meta_file, "r") as f:
@@ -565,7 +549,7 @@ if __name__ == "__main__":  # noqa: C901
     # Following few lines selects option for different backend and affinity matrices. Finds best values for hyperameters using dev set.
     best_nn = None
     if params["affinity"] == "nn":
-        logger.info("Tuning for nn (Multiple iterations over AMI Dev set)")
+        logger.info("Tuning for nn (Multiple iterations over VPC Dev set)")
         best_nn = dev_nn_tuner(full_meta, "dev")
 
     n_lambdas = None
@@ -577,7 +561,7 @@ if __name__ == "__main__":  # noqa: C901
         # oracle num_spkrs or not, doesn't matter for kmeans and SC backends
         # cos: Tune for the best pval for SC /kmeans (for unknown num of spkrs)
         logger.info(
-            "Tuning for p-value for SC (Multiple iterations over AMI Dev set)"
+            "Tuning for p-value for SC (Multiple iterations over VPC Dev set)"
         )
         best_pval = dev_pval_tuner(full_meta, "dev")
 
@@ -590,7 +574,7 @@ if __name__ == "__main__":  # noqa: C901
         if params["oracle_n_spkrs"] is False:
             # nn: Tune num of number of components (to be updated later)
             logger.info(
-                "Tuning for number of eigen components for NN (Multiple iterations over AMI Dev set)"
+                "Tuning for number of eigen components for NN (Multiple iterations over VPC Dev set)"
             )
             # dev_tuner used for tuning num of components in NN. Can be used in future.
             n_lambdas = dev_tuner(full_meta, "dev")
@@ -607,34 +591,32 @@ if __name__ == "__main__":  # noqa: C901
         type_of_num_spkr
         + "_"
         + str(params["affinity"])
-        + "."
-        + params["mic_type"]
     )
 
     # Perform final diarization on 'dev' and 'eval' with best hyperparams.
     final_DERs = {}
-    for split_type in ["dev", "eval"]:
-        if split_type == "dev":
+    for subset in ["dev", "eval"]:
+        if subset == "dev":
             full_meta = full_meta_dev
         else:
             full_meta = full_meta_eval
 
         # Performing diarization.
-        msg = "Diarizing using best hyperparams: " + split_type + " set"
+        msg = "Diarizing using best hyperparams: " + subset + " set"
         logger.info(msg)
         out_boundaries = diarize_dataset(
             full_meta,
-            split_type,
+            subset,
             n_lambdas=n_lambdas,
             pval=best_pval,
             n_neighbors=best_nn,
         )
 
         # Computing DER.
-        msg = "Computing DERs for " + split_type + " set"
+        msg = "Computing DERs for " + subset + " set"
         logger.info(msg)
         ref_rttm = os.path.join(
-            params["ref_rttm_dir"], "fullref_ami_" + split_type + ".rttm"
+            params["ref_rttm_dir"], "fullref_vpc_" + subset + ".rttm"
         )
         sys_rttm = out_boundaries
         [MS, FA, SER, DER_vals] = DER(
@@ -646,23 +628,23 @@ if __name__ == "__main__":  # noqa: C901
         )
 
         # Writing DER values to a file. Append tag.
-        der_file_name = split_type + "_DER_" + tag
+        der_file_name = subset + "_DER_" + tag
         out_der_file = os.path.join(params["der_dir"], der_file_name)
         msg = "Writing DER file to: " + out_der_file
         logger.info(msg)
         diar.write_ders_file(ref_rttm, DER_vals, out_der_file)
 
         msg = (
-            "AMI "
-            + split_type
-            + " set DER = %s %%\n" % (str(round(DER_vals[-1], 2)))
+            "VPC "
+            + subset
+            + " DER = %s %%\n" % (str(round(DER_vals[-1], 2)))
         )
         logger.info(msg)
-        final_DERs[split_type] = round(DER_vals[-1], 2)
+        final_DERs[subset] = round(DER_vals[-1], 2)
 
     # Final print DERs
     msg = (
-        "Final Diarization Error Rate (%%) on AMI corpus: Dev = %s %% | Eval = %s %%\n"
+        "Final Diarization Error Rate (%%) on VPC meeting corpus: Dev = %s %% | Eval = %s %%\n"
         % (str(final_DERs["dev"]), str(final_DERs["eval"]))
     )
     logger.info(msg)
