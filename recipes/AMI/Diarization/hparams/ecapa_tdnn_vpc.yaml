@@ -11,8 +11,9 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 
 # Directories: Replace !PLACEHOLDER with full path of the directory.
 data_folder: !PLACEHOLDER # e.g., /path/to/vpc_meeting_mix/
+json_path: !PLACEHOLDER
 
-output_folder: results/vpc/ecapa/
+output_folder: results/vpc/ecapa
 save_folder: !ref <output_folder>/save
 skip_prep: False
 
@@ -45,6 +46,17 @@ emb_attention_channels: 128
 emb_lin_neurons: 192
 batch_size: 512
 
+# AMI data_prep parameters
+dev_subset: libri_dev
+dev_meta_file: !ref <meta_data_dir>/vpc_<dev_subset>.subsegs.json
+eval_subsets: 
+    - libri_dev
+    - libri_test
+    - vctk_dev
+    - vctk_test
+max_subseg_dur: 3.0
+overlap: 1.5
+
 backend: 'SC' # options: 'kmeans' # Note: kmeans goes only with cos affinity
 
 # Spectral Clustering parameters
@@ -53,7 +65,7 @@ max_num_spkrs: 10
 oracle_n_spkrs: True
 
 # DER evaluation parameters
-ignore_overlap: True
+ignore_overlap: False
 forgiveness_collar: 0.25
 
 # Used for multi-mic beamformer
