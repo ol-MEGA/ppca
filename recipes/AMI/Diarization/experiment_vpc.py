@@ -178,11 +178,10 @@ def diarize_dataset(full_meta, subset, n_lambdas, pval, n_neighbors=10):
 
     # Get all the recording IDs in this dataset.
     all_keys = full_meta.keys()
-    A = [word.rstrip().split("_")[0] for word in all_keys]
-    all_rec_ids = list(set(A[1:]))
+    A = ['_'.join(word.rstrip().split("_")[:-2]) for word in all_keys]
+    all_rec_ids = list(set(A))
     all_rec_ids.sort()
     split = "VPC_" + subset
-    i = 1
 
     # Setting eval modality.
     params["embedding_model"].eval()
@@ -196,22 +195,6 @@ def diarize_dataset(full_meta, subset, n_lambdas, pval, n_neighbors=10):
 
     # Diarizing different recordings in a dataset.
     for rec_id in tqdm(all_rec_ids):
-        # This tag will be displayed in the log.
-        tag = (
-            "["
-            + str(subset)
-            + ": "
-            + str(i)
-            + "/"
-            + str(len(all_rec_ids))
-            + "]"
-        )
-        i = i + 1
-
-        # Log message.
-        msg = "Diarizing %s : %s " % (tag, rec_id)
-        logger.debug(msg)
-
         # Embedding directory.
         if not os.path.exists(os.path.join(params["embedding_dir"], split)):
             os.makedirs(os.path.join(params["embedding_dir"], split))
@@ -316,7 +299,7 @@ def diarize_dataset(full_meta, subset, n_lambdas, pval, n_neighbors=10):
     return concate_rttm_file
 
 
-def dev_pval_tuner(dev_meta, subset):
+def dev_pval_tuner(dev_meta, subset, ref_rttm):
     """Tuning p_value for affinity matrix.
     The p_value used so that only p% of the values in each row is retained.
     """
@@ -331,7 +314,6 @@ def dev_pval_tuner(dev_meta, subset):
             dev_meta, subset, n_lambdas, p_v
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -353,7 +335,7 @@ def dev_pval_tuner(dev_meta, subset):
     return tuned_p_val
 
 
-def dev_ahc_threshold_tuner(full_meta, subset):
+def dev_ahc_threshold_tuner(dev_meta, subset, ref_rttm):
     """Tuning threshold for affinity matrix. This function is called when AHC is used as backend."""
 
     DER_list = []
@@ -365,10 +347,9 @@ def dev_ahc_threshold_tuner(full_meta, subset):
     for p_v in prange:
         # Process whole dataset for value of p_v.
         concate_rttm_file = diarize_dataset(
-            full_meta, subset, n_lambdas, p_v
+            dev_meta, subset, n_lambdas, p_v
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -388,7 +369,7 @@ def dev_ahc_threshold_tuner(full_meta, subset):
     return tuned_p_val
 
 
-def dev_nn_tuner(full_meta, subset):
+def dev_nn_tuner(dev_meta, subset, ref_rttm):
     """Tuning n_neighbors on dev set. Assuming oracle num of speakers.
     This is used when nn based affinity is selected.
     """
@@ -403,10 +384,9 @@ def dev_nn_tuner(full_meta, subset):
 
         # Process whole dataset for value of n_lambdas.
         concate_rttm_file = diarize_dataset(
-            full_meta, subset, n_lambdas, pval, nn
+            dev_meta, subset, n_lambdas, pval, nn
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -426,7 +406,7 @@ def dev_nn_tuner(full_meta, subset):
     return tunned_nn[0]
 
 
-def dev_tuner(full_meta, subset):
+def dev_tuner(dev_meta, subset, ref_rttm):
     """Tuning n_components on dev set. Used for nn based affinity matrix.
     Note: This is a very basic tunning for nn based affinity.
     This is work in progress till we find a better way.
@@ -438,10 +418,9 @@ def dev_tuner(full_meta, subset):
 
         # Process whole dataset for value of n_lambdas.
         concate_rttm_file = diarize_dataset(
-            full_meta, subset, n_lambdas, pval
+            dev_meta, subset, n_lambdas, pval
         )
 
-        ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_dev.rttm")
         sys_rttm = concate_rttm_file
         [MS, FA, SER, DER_] = DER(
             ref_rttm,
@@ -505,6 +484,7 @@ if __name__ == "__main__":  # noqa: C901
             prepare_vpc,
             kwargs={
                 "json_path": params["json_path"],
+                "data_folder": params["data_folder"],
                 "save_folder": params["save_folder"],
                 "ref_rttm_dir": params["ref_rttm_dir"],
                 "meta_data_dir": params["meta_data_dir"],
@@ -519,6 +499,10 @@ if __name__ == "__main__":  # noqa: C901
         hyperparams_to_save=params_file,
         overrides=overrides,
     )
+
+    # Extend save folders by forgiveness collar
+    params["der_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
+    params["sys_rttm_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
 
     # Few more experiment directories inside results/ (to maintain cleaner structure).
     exp_dirs = [
@@ -540,17 +524,16 @@ if __name__ == "__main__":  # noqa: C901
     # VPC Dev Set: Tune hyperparams on libri dev set.
     # Read the meta-data file for dev set generated during data_prep
     dev_meta_file = params["dev_meta_file"]
+    dev_ref_rttm = os.path.join(params["ref_rttm_dir"], "fullref_vpc_" + params["dev_subset"] + ".rttm")
     with open(dev_meta_file, "r") as f:
-        meta_dev = json.load(f)
-
-    full_meta = meta_dev
+        dev_meta = json.load(f)
 
     # Processing starts from here
     # Following few lines selects option for different backend and affinity matrices. Finds best values for hyperameters using dev set.
     best_nn = None
     if params["affinity"] == "nn":
         logger.info("Tuning for nn (Multiple iterations over VPC Dev set)")
-        best_nn = dev_nn_tuner(full_meta, "dev")
+        best_nn = dev_nn_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
 
     n_lambdas = None
     best_pval = None
@@ -563,11 +546,11 @@ if __name__ == "__main__":  # noqa: C901
         logger.info(
             "Tuning for p-value for SC (Multiple iterations over VPC Dev set)"
         )
-        best_pval = dev_pval_tuner(full_meta, "dev")
+        best_pval = dev_pval_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
 
     elif params["backend"] == "AHC":
         logger.info("Tuning for threshold-value for AHC")
-        best_threshold = dev_ahc_threshold_tuner(full_meta, "dev")
+        best_threshold = dev_ahc_threshold_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
         best_pval = best_threshold
     else:
         # NN for unknown num of speakers (can be used in future)
@@ -577,14 +560,8 @@ if __name__ == "__main__":  # noqa: C901
                 "Tuning for number of eigen components for NN (Multiple iterations over VPC Dev set)"
             )
             # dev_tuner used for tuning num of components in NN. Can be used in future.
-            n_lambdas = dev_tuner(full_meta, "dev")
-
-    # Load 'dev' and 'eval' metadata files.
-    full_meta_dev = full_meta  # current full_meta is for 'dev'
-    eval_meta_file = params["eval_meta_file"]
-    with open(eval_meta_file, "r") as f:
-        full_meta_eval = json.load(f)
-
+            n_lambdas = dev_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
+    
     # Tag to be appended to final output DER files. Writing DER for individual files.
     type_of_num_spkr = "oracle" if params["oracle_n_spkrs"] else "est"
     tag = (
@@ -593,19 +570,19 @@ if __name__ == "__main__":  # noqa: C901
         + str(params["affinity"])
     )
 
-    # Perform final diarization on 'dev' and 'eval' with best hyperparams.
+    # Perform final diarization on eval subsets with best hyperparams.
     final_DERs = {}
-    for subset in ["dev", "eval"]:
-        if subset == "dev":
-            full_meta = full_meta_dev
-        else:
-            full_meta = full_meta_eval
+    for subset in params["eval_subsets"]:
+        # Read the meta-data file for current subset
+        eval_meta_file = os.path.join(params["meta_data_dir"], "vpc_" + subset + ".subsegs.json")
+        with open(eval_meta_file, "r") as f:
+            eval_meta = json.load(f)
 
         # Performing diarization.
-        msg = "Diarizing using best hyperparams: " + subset + " set"
+        msg = "Diarizing using best hyperparams: " + subset
         logger.info(msg)
         out_boundaries = diarize_dataset(
-            full_meta,
+            eval_meta,
             subset,
             n_lambdas=n_lambdas,
             pval=best_pval,
@@ -613,7 +590,7 @@ if __name__ == "__main__":  # noqa: C901
         )
 
         # Computing DER.
-        msg = "Computing DERs for " + subset + " set"
+        msg = "Computing DERs for " + subset
         logger.info(msg)
         ref_rttm = os.path.join(
             params["ref_rttm_dir"], "fullref_vpc_" + subset + ".rttm"
@@ -642,9 +619,8 @@ if __name__ == "__main__":  # noqa: C901
         logger.info(msg)
         final_DERs[subset] = round(DER_vals[-1], 2)
 
-    # Final print DERs
-    msg = (
-        "Final Diarization Error Rate (%%) on VPC meeting corpus: Dev = %s %% | Eval = %s %%\n"
-        % (str(final_DERs["dev"]), str(final_DERs["eval"]))
-    )
+    # Final print DERscollar
+    msg = ("Final Diarization Error Rate (%%) on VPC meeting corpus:\n")
+    for subset in params["eval_subsets"]:
+        msg += (subset + " = %s %%\n" % (str(final_DERs[subset])))
     logger.info(msg)
