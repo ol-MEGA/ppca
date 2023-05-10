@@ -22,6 +22,7 @@ SAMPLERATE = 16000
 
 def prepare_vpc(
     json_path,
+    data_folder,
     save_folder,
     ref_rttm_dir,
     meta_data_dir,
@@ -35,6 +36,8 @@ def prepare_vpc(
     ---------
     json_path : str
         Path where the VPC meeting mix json is stored.
+    data_folder : str
+        Path to the folder where the mixed VPC meetings are stored.
     save_folder : str
         The save directory in results.
     ref_rttm_dir : str
@@ -48,7 +51,7 @@ def prepare_vpc(
 
     Example
     -------
-    >>> from recipes.AMI.ami_prepare import prepare_ami
+    >>> from recipes.AMI.vpc_prepare import prepare_vpc
     >>> data_folder = '/network/datasets/ami/amicorpus/'
     >>> manual_annot_folder = '/home/mila/d/dawalatn/nauman/ami_public_manual/'
     >>> save_folder = 'results/save/'
@@ -67,6 +70,8 @@ def prepare_vpc(
 
     # Create configuration for easily skipping data_preparation stage
     conf = {
+        "json_path": json_path,
+        "data_folder": data_folder,
         "save_folder": save_folder,
         "ref_rttm_dir": ref_rttm_dir,
         "meta_data_dir": meta_data_dir,
@@ -77,6 +82,8 @@ def prepare_vpc(
 
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
+    if not os.path.exists(meta_data_dir):
+        os.makedirs(meta_data_dir)
 
     # Setting output option files.
     opt_file = "opt_vpc_prepare.pkl"
@@ -107,6 +114,18 @@ def prepare_vpc(
 
         rttm_file = ref_rttm_dir + "/fullref_vpc_" + subset + ".rttm"
         prepare_RTTM(dset, rttm_file)
+
+        # Create meta_files for subset
+        data_dir = os.path.join(data_folder, subset)
+        meta_filename_prefix = "vpc_" + subset
+        prepare_metadata(
+            rttm_file,
+            meta_data_dir,
+            data_dir,
+            meta_filename_prefix,
+            max_subseg_dur,
+            overlap,
+        )
     
     save_opt_file = os.path.join(save_folder, opt_file)
     save_pkl(conf, save_opt_file)
@@ -173,6 +192,7 @@ def prepare_RTTM(dset, out_rttm_file):
 
 def is_overlapped(end1, start2):
     """Returns True if the two segments overlap
+    Takes rounding inaccuricies into account
 
     Arguments
     ---------
@@ -183,6 +203,8 @@ def is_overlapped(end1, start2):
     """
 
     if start2 > end1:
+        return False
+    elif (end1 - start2) <= 0.0002:
         return False
     else:
         return True
@@ -205,17 +227,23 @@ def merge_rttm_intervals(rttm_segs):
         e = float(row[3]) + float(row[4])
 
         if is_overlapped(end, s):
-            # Update only end. The strt will be same as in last segment
-            # Just update last row in the merged_segs
-            end = max(end, e)
-            merged_segs[-1][3] = str(round(strt, 4))
-            merged_segs[-1][4] = str(round((end - strt), 4))
-            merged_segs[-1][7] = "overlap"  # previous_row[7] + '-'+ row[7]
-        else:
-            # Add a new disjoint segment
-            strt = s
-            end = e
-            merged_segs.append(row)  # this will have 1 spkr ID
+            # update previous segment end, i.e. duration
+            merged_segs[-1][4] = str(round((s - strt), 4))
+
+            # add overlap region between 2nd start and 1st end
+            row_ov = row
+            row_ov[3] = str(round(s, 4))
+            row_ov[4] = str(round(end - s, 4))
+            row_ov[7] = "overlap"  # previous_row[7] + '-'+ row[7]
+            merged_segs.append(row_ov)
+
+            # update current segment start
+            row[3] = str(round(end, 4))
+
+        # Add a new disjoint segment
+        strt = s
+        end = e
+        merged_segs.append(row)  # this will have 1 spkr ID
 
     return merged_segs
 
@@ -267,6 +295,86 @@ def get_subsegments(merged_segs, max_subseg_dur=3.0, overlap=1.5):
 
     return subsegments
 
+def prepare_metadata(
+    rttm_file, save_dir, data_dir, filename, max_subseg_dur, overlap
+):
+    # Read RTTM, get unique meeting_IDs (from RTTM headers)
+    # For each MeetingID. select that meetID -> merge -> subsegment -> json -> append
+
+    # Read RTTM
+    RTTM = []
+    with open(rttm_file, "r") as f:
+        for line in f:
+            entry = line[:-1]
+            RTTM.append(entry)
+
+    spkr_info = filter(lambda x: x.startswith("SPKR-INFO"), RTTM)
+    rec_ids = list(set([row.split(" ")[1] for row in spkr_info]))
+    rec_ids.sort()  # sorting just to make JSON look in proper sequence
+
+    # For each recording merge segments and then perform subsegmentation
+    MERGED_SEGMENTS = []
+    SUBSEGMENTS = []
+    for rec_id in rec_ids:
+        segs_iter = filter(
+            lambda x: x.startswith("SPEAKER " + str(rec_id)), RTTM
+        )
+        gt_rttm_segs = [row.split(" ") for row in segs_iter]
+
+        # Merge, subsegment and then convert to json format.
+        merged_segs = merge_rttm_intervals(
+            gt_rttm_segs
+        )  # We lose speaker_ID after merging
+        MERGED_SEGMENTS = MERGED_SEGMENTS + merged_segs
+
+        # Divide segments into smaller sub-segments
+        subsegs = get_subsegments(merged_segs, max_subseg_dur, overlap)
+        SUBSEGMENTS = SUBSEGMENTS + subsegs
+
+    # Write segment AND sub-segments (in RTTM format)
+    segs_file = os.path.join(save_dir, filename + ".segments.rttm")
+    subsegment_file = os.path.join(save_dir, filename + ".subsegments.rttm")
+
+    with open(segs_file, "w") as f:
+        for row in MERGED_SEGMENTS:
+            line_str = " ".join(row)
+            f.write("%s\n" % line_str)
+
+    with open(subsegment_file, "w") as f:
+        for row in SUBSEGMENTS:
+            line_str = " ".join(row)
+            f.write("%s\n" % line_str)
+
+    # Create JSON from subsegments
+    json_dict = {}
+    for row in SUBSEGMENTS:
+        rec_id = row[1]
+        strt = str(round(float(row[3]), 4))
+        end = str(round((float(row[3]) + float(row[4])), 4))
+        subsegment_ID = rec_id + "_" + strt + "_" + end
+        dur = row[4]
+        start_sample = int(float(strt) * SAMPLERATE)
+        end_sample = int(float(end) * SAMPLERATE)
+
+        # Single mic audio
+        wav_file_path = os.path.join(data_dir, rec_id + ".wav")
+
+        # Note: key "file" without 's' is used for single-mic
+        json_dict[subsegment_ID] = {
+            "wav": {
+                "file": wav_file_path,
+                "duration": float(dur),
+                "start": int(start_sample),
+                "stop": int(end_sample),
+            },
+        }
+
+    out_json_file = os.path.join(save_dir, filename + ".subsegs.json")
+    with open(out_json_file, mode="w") as json_f:
+        json.dump(json_dict, json_f, indent=2)
+
+    msg = "%s JSON prepared" % (out_json_file)
+    logger.debug(msg)
 
 def skip(save_folder, conf, meta_files, opt_file):
     """
