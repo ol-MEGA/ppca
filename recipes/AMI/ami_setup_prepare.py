@@ -38,6 +38,7 @@ def prepare_ami(
     mic_type="Mix-Headset",
     vad_type="oracle",
     max_subseg_dur=3.0,
+    min_subseg_dur=0,
     overlap=1.5,
 ):
     """
@@ -103,6 +104,7 @@ def prepare_ami(
         "mic_type": mic_type,
         "vad": vad_type,
         "max_subseg_dur": max_subseg_dur,
+        "min_subseg_dur": min_subseg_dur,
         "overlap": overlap,
         "meta_files": meta_files,
     }
@@ -180,6 +182,7 @@ def prepare_ami(
             data_folder,
             meta_filename_prefix,
             max_subseg_dur,
+            min_subseg_dur,
             overlap,
             mic_type,
         )
@@ -265,7 +268,6 @@ def is_overlapped(end1, start2):
 
 def merge_rttm_intervals(rttm_segs):
     """Merges adjacent segments in rttm if they overlap.
-    Different definition of overlap regions as in ami_prepare.py
     """
     # For one recording
     # rec_id = rttm_segs[0][1]
@@ -281,28 +283,21 @@ def merge_rttm_intervals(rttm_segs):
         e = float(row[3]) + float(row[4])
 
         if is_overlapped(end, s):
-            # update previous segment end, i.e. duration
-            merged_segs[-1][4] = str(round((s - strt), 4))
-
-            # add overlap region between 2nd start and 1st end
-            row_ov = row
-            row_ov[3] = str(round(s, 4))
-            row_ov[4] = str(round(end - s, 4))
-            row_ov[7] = "overlap"  # previous_row[7] + '-'+ row[7]
-            merged_segs.append(row_ov)
-
-            # update current segment start
-            row[3] = str(round(end, 4))
-
-        # Add a new disjoint segment
-        strt = s
-        end = e
-        merged_segs.append(row)  # this will have 1 spkr ID
+            # Update only end. The strt will be same as in last segment
+            # Just update last row in the merged_segs
+            end = max(end, e)
+            merged_segs[-1][3] = str(round(strt, 4))
+            merged_segs[-1][4] = str(round((end - strt), 4))
+            merged_segs[-1][7] = "overlap"  # previous_row[7] + '-'+ row[7]
+        else:
+            # Add a new disjoint segment
+            strt = s
+            end = e
+            merged_segs.append(row)  # this will have 1 spkr ID
 
     return merged_segs
 
-
-def get_subsegments(merged_segs, max_subseg_dur=3.0, overlap=1.5):
+def get_subsegments(merged_segs, max_subseg_dur=3.0, min_subseg_dur=0, overlap=1.5):
     """Divides bigger segments into smaller sub-segments
     """
 
@@ -314,44 +309,45 @@ def get_subsegments(merged_segs, max_subseg_dur=3.0, overlap=1.5):
         seg_dur = float(row[4])
         rec_id = row[1]
 
-        if seg_dur > max_subseg_dur:
-            num_subsegs = int(seg_dur / shift)
-            # Taking 0.01 sec as small step
-            seg_start = float(row[3])
-            seg_end = seg_start + seg_dur
+        if seg_dur > min_subseg_dur:
+            if seg_dur > max_subseg_dur:
+                num_subsegs = int(seg_dur / shift)
+                # Taking 0.01 sec as small step
+                seg_start = float(row[3])
+                seg_end = seg_start + seg_dur
 
-            # Now divide this segment (new_row) in smaller subsegments
-            for i in range(num_subsegs):
-                subseg_start = seg_start + i * shift
-                subseg_end = min(subseg_start + max_subseg_dur - 0.01, seg_end)
-                subseg_dur = subseg_end - subseg_start
+                # Now divide this segment (new_row) in smaller subsegments
+                for i in range(num_subsegs):
+                    subseg_start = seg_start + i * shift
+                    subseg_end = min(subseg_start + max_subseg_dur - 0.01, seg_end)
+                    subseg_dur = subseg_end - subseg_start
 
-                new_row = [
-                    "SPEAKER",
-                    rec_id,
-                    "0",
-                    str(round(float(subseg_start), 4)),
-                    str(round(float(subseg_dur), 4)),
-                    "<NA>",
-                    "<NA>",
-                    row[7],
-                    "<NA>",
-                    "<NA>",
-                ]
+                    new_row = [
+                        "SPEAKER",
+                        rec_id,
+                        "0",
+                        str(round(float(subseg_start), 4)),
+                        str(round(float(subseg_dur), 4)),
+                        "<NA>",
+                        "<NA>",
+                        row[7],
+                        "<NA>",
+                        "<NA>",
+                    ]
 
-                subsegments.append(new_row)
+                    subsegments.append(new_row)
 
-                # Break if exceeding the boundary
-                if subseg_end >= seg_end:
-                    break
-        else:
-            subsegments.append(row)
+                    # Break if exceeding the boundary
+                    if subseg_end >= seg_end:
+                        break
+            else:
+                subsegments.append(row)
 
     return subsegments
 
 
 def prepare_metadata(
-    rttm_file, save_dir, data_dir, filename, max_subseg_dur, overlap, mic_type
+    rttm_file, save_dir, data_dir, filename, max_subseg_dur, min_subseg_dur, overlap, mic_type
 ):
     # Read RTTM, get unique meeting_IDs (from RTTM headers)
     # For each MeetingID. select that meetID -> merge -> subsegment -> json -> append
@@ -383,7 +379,7 @@ def prepare_metadata(
         MERGED_SEGMENTS = MERGED_SEGMENTS + merged_segs
 
         # Divide segments into smaller sub-segments
-        subsegs = get_subsegments(merged_segs, max_subseg_dur, overlap)
+        subsegs = get_subsegments(merged_segs, max_subseg_dur, min_subseg_dur, overlap)
         SUBSEGMENTS = SUBSEGMENTS + subsegs
 
     # Write segment AND sub-segments (in RTTM format)
