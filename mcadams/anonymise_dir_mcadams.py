@@ -93,6 +93,8 @@ if __name__ == "__main__":
     parser.add_argument('--winLengthinms',type=int,default=20)
     parser.add_argument('--shiftLengthinms',type=int,default=10)
     config = parser.parse_args()
+
+    np.random.seed(1234)
     
     #Load protocol file
     list_name = config.data_dir + '/wav.scp'
@@ -109,7 +111,6 @@ if __name__ == "__main__":
         os.makedirs(os.path.split(output_file)[0], exist_ok=True)
 
         if config.mc_rand:
-            np.random.seed(1234)
             config.mc_coeff = np.random.uniform(config.mc_coeff_min, config.mc_coeff_max)
 
             f.write(output_file + ', ' + str(config.mc_coeff) + '\n')
