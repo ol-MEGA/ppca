@@ -63,9 +63,6 @@ except ImportError:
 def compute_embeddings(wavs, lens):
     """Definition of the steps for computation of embeddings from the waveforms."""
     with torch.no_grad():
-        # optional: anonymization
-        if params["apply_anon"]:
-            wavs = params["anonymize_McAdams"](wavs)
         wavs = wavs.to(run_opts["device"])
         feats = params["compute_features"](wavs)
         feats = params["mean_var_norm"](feats, lens)
@@ -221,10 +218,7 @@ def diarize_dataset(full_meta, split_type, n_lambdas, pval, n_neighbors=10):
             os.makedirs(os.path.join(params["embedding_dir"], split))
 
         # File to store embeddings.
-        if params["apply_anon"]:
-            emb_file_name = rec_id + "." + params["mic_type"] + ".emb_McAdams.pkl"
-        else:
-            emb_file_name = rec_id + "." + params["mic_type"] + ".emb_stat.pkl"
+        emb_file_name = rec_id + "." + params["mic_type"] + ".emb_stat.pkl"
         diary_stat_emb_file = os.path.join(
             params["embedding_dir"], split, emb_file_name
         )
@@ -658,8 +652,6 @@ if __name__ == "__main__":  # noqa: C901
 
         # Writing DER values to a file. Append tag.
         der_file_name = split_type + "_DER_" + tag
-        if params["apply_anon"]:
-            der_file_name = split_type + "_DER_McAdams_" + tag
         out_der_file = os.path.join(params["der_dir"], der_file_name)
         msg = "Writing DER file to: " + out_der_file
         logger.info(msg)
