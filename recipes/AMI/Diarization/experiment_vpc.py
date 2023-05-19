@@ -501,8 +501,8 @@ if __name__ == "__main__":  # noqa: C901
     )
 
     # Extend save folders by forgiveness collar
-    params["der_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
-    params["sys_rttm_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
+    #params["der_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
+    #params["sys_rttm_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
 
     # Few more experiment directories inside results/ (to maintain cleaner structure).
     exp_dirs = [
@@ -596,31 +596,39 @@ if __name__ == "__main__":  # noqa: C901
             params["ref_rttm_dir"], "fullref_vpc_" + subset + ".rttm"
         )
         sys_rttm = out_boundaries
-        [MS, FA, SER, DER_vals] = DER(
-            ref_rttm,
-            sys_rttm,
-            params["ignore_overlap"],
-            params["forgiveness_collar"],
-            individual_file_scores=True,
-        )
 
-        # Writing DER values to a file. Append tag.
-        der_file_name = subset + "_DER_" + tag
-        out_der_file = os.path.join(params["der_dir"], der_file_name)
-        msg = "Writing DER file to: " + out_der_file
-        logger.info(msg)
-        diar.write_ders_file(ref_rttm, DER_vals, out_der_file)
+        der_setup = ["forgiving", "fair", "full"]
+        ignore_overlap = [True, False, False]
+        forgiveness_collar = [0.25, 0.25, 0]
+        for setup, overlap, collar in zip(der_setup, ignore_overlap, forgiveness_collar):
+            [MS, FA, SER, DER_vals] = DER(
+                ref_rttm,
+                sys_rttm,
+                overlap,
+                collar,
+                individual_file_scores=True,
+            )
 
-        msg = (
-            "VPC "
-            + subset
-            + " DER = %s %%\n" % (str(round(DER_vals[-1], 2)))
-        )
-        logger.info(msg)
-        final_DERs[subset] = round(DER_vals[-1], 2)
+            # Writing DER values to a file. Append tag.
+            der_file_name = subset + "_DER_" + setup + "_" + tag
+            out_der_file = os.path.join(params["der_dir"], der_file_name)
+            msg = "Writing DER file to: " + out_der_file
+            logger.info(msg)
+            diar.write_ders_file(ref_rttm, DER_vals, out_der_file)
 
-    # Final print DERscollar
-    msg = ("Final Diarization Error Rate (%%) on VPC meeting corpus:\n")
-    for subset in params["eval_subsets"]:
-        msg += (subset + " = %s %%\n" % (str(final_DERs[subset])))
+            msg = (
+                "VPC "
+                + subset
+                + " DER "
+                + setup
+                + " = %s %%\n" % (str(round(DER_vals[-1], 2)))
+            )
+            logger.info(msg)
+            final_DERs[subset + "|" + setup] = round(DER_vals[-1], 2)
+
+    # Final print DERs
+    msg = (
+        "Final Diarization Error Rate (%%) on VPC meeting corpus: Dev = %s %% | Eval = %s %%\n"
+        % (str(final_DERs[subset + "|" + setup]), str(final_DERs[subset + "|" + setup]))
+    )
     logger.info(msg)
