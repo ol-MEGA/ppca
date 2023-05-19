@@ -24,7 +24,7 @@ The forgiveness collar of 0.25 sec is used and overlaps are ignored while evalua
 | 2023 | ECAPA-TDNN + SC | HeadsetMix | 2.22% | 2.18% | 2.86% | 1.82% |
 | 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams_fixed | 3.00% | 3.33% | 3.65% | 4.22% |
 | 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams_rand | 9.95% | 11.13% | 12.39% | 15.97% |
-| 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGA | 40.81% | 33.83% | 46.59% | 36.68% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGA | 42.86% | 35.18% |46.41% | 38.93% |
 | 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGArep | 18.04% | 14.08% | 18.29% | 16.20% |
 | 2021 | ECAPA-TDNN + SC | LapelMix | 2.17% | 2.36% | 2.34% | 2.57% |
 | 2021 | ECAPA-TDNN + SC | Array-1 | 2.95% | 2.75% | 3.07% | 3.30% |
