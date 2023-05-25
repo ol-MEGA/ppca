@@ -562,6 +562,10 @@ if __name__ == "__main__":  # noqa: C901
             # dev_tuner used for tuning num of components in NN. Can be used in future.
             n_lambdas = dev_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
     
+    logger.info(
+        f"Tuned p-value {best_pval} for SC; n_lambdas= {n_lambdas}; n_neighbors={best_nn},"
+    )
+    
     # Tag to be appended to final output DER files. Writing DER for individual files.
     type_of_num_spkr = "oracle" if params["oracle_n_spkrs"] else "est"
     tag = (
