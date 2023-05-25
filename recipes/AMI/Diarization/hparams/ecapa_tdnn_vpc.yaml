@@ -13,9 +13,9 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 data_folder: !PLACEHOLDER # e.g., /path/to/vpc_meeting_mix/
 json_path: !PLACEHOLDER
 
-output_folder: results/vpc/ecapa_models
+output_folder: results/vpc/ecapa
 save_folder: !ref <output_folder>/save
-result_folder: !ref <save_folder>/20mels
+result_folder: !ref <save_folder>
 skip_prep: False
 
 # Embedding model
@@ -35,7 +35,7 @@ sys_rttm_dir: !ref <result_folder>/sys_rttms
 der_dir: !ref <result_folder>/DER
 
 # Spectral feature parameters
-n_mels: 20
+n_mels: 80
 # left_frames: 0
 # right_frames: 0
 # deltas: False

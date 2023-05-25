@@ -15,9 +15,9 @@ data_folder: !PLACEHOLDER # e.g., /path/to/amicorpus/
 # Download manual annotations from: http://groups.inf.ed.ac.uk/ami/download/
 manual_annot_folder: !PLACEHOLDER # e.g., /path/to/ami_public_manual_1.6.2/
 
-output_folder: results/ami/ecapa_models
+output_folder: results/ami/ecapa
 save_folder: !ref <output_folder>/save
-result_folder: !ref <save_folder>/40mels
+result_folder: !ref <save_folder>
 skip_prep: False
 
 # Embedding model
@@ -37,7 +37,7 @@ sys_rttm_dir: !ref <result_folder>/sys_rttms
 der_dir: !ref <result_folder>/DER
 
 # Spectral feature parameters
-n_mels: 40
+n_mels: 80
 # left_frames: 0
 # right_frames: 0
 # deltas: False

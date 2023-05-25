@@ -111,7 +111,7 @@ mean_var_norm_emb: !new:speechbrain.processing.features.InputNormalization
     std_norm: False
 
 pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
-    collect_in: !ref <save_folder>
+    collect_in: !ref <result_folder>
     loadables:
         embedding_model: !ref <embedding_model>
     paths:
