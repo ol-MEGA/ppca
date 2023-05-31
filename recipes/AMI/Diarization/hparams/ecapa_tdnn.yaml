@@ -17,7 +17,7 @@ manual_annot_folder: !PLACEHOLDER # e.g., /path/to/ami_public_manual_1.6.2/
 
 output_folder: results/ami/ecapa
 save_folder: !ref <output_folder>/save
-result_folder: !ref <save_folder>
+result_folder: !ref <output_folder>
 skip_prep: False
 
 # Embedding model

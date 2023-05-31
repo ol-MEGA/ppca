@@ -15,7 +15,7 @@ json_path: !PLACEHOLDER
 
 output_folder: results/vpc/ecapa
 save_folder: !ref <output_folder>/save
-result_folder: !ref <save_folder>
+result_folder: !ref <output_folder>
 skip_prep: False
 
 # Embedding model
@@ -47,7 +47,7 @@ emb_attention_channels: 128
 emb_lin_neurons: 192
 batch_size: 512
 
-# AMI data_prep parameters
+# data_prep parameters
 dev_subset: libri_dev
 dev_meta_file: !ref <meta_data_dir>/vpc_<dev_subset>.subsegs.json
 eval_subsets: 
