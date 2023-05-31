@@ -153,24 +153,33 @@ def get_RTTM_per_rec(ex):
         )
         rttm.append(line)
 
-    # Append lines
+    # Append lines and merge same speakers
+    speaker = ""
     for spkr_id, s, o in zip(spkrs_list, num_samples, offset):
         # e.g. SPEAKER ES2008c 0 37.880 0.590 <NA> <NA> ES2008c.A_PM <NA> <NA>
         start = float(o)/SAMPLERATE
         dur = float(s)/SAMPLERATE
-
-        line = (
-            "SPEAKER "
-            + rec_id
-            + " 0 "
-            + str(round(start, 4))
-            + " "
-            + str(round(dur, 4))
-            + " <NA> <NA> "
-            + spkr_id
-            + " <NA> <NA>"
-        )
+        
+        if speaker == spkr_id:
+            # update previous segment end, i.e. duration
+            line = rttm[-1].split(" ")
+            line[4] = str(round((float(line[4]) + dur), 5))
+            line = (" ").join(line)
+            rttm.pop(-1)
+        else:
+            line = (
+                "SPEAKER "
+                + rec_id
+                + " 0 "
+                + str(round(start, 5))
+                + " "
+                + str(round(dur, 5))
+                + " <NA> <NA> "
+                + spkr_id
+                + " <NA> <NA>"
+            )
         rttm.append(line)
+        speaker = spkr_id
 
     return rttm
 
@@ -204,13 +213,11 @@ def is_overlapped(end1, start2):
 
     if start2 > end1:
         return False
-    elif (end1 - start2) <= 0.0002:
-        return False
     else:
         return True
 
 
-def merge_rttm_intervals(rttm_segs):
+def merge_rttm_intervals(rttm_segs, insert_ov=False):
     """Merges adjacent segments in rttm if they overlap.
     """
     # For one recording
@@ -221,28 +228,38 @@ def merge_rttm_intervals(rttm_segs):
     merged_segs = [rttm_segs[0]]
     strt = float(rttm_segs[0][3])
     end = float(rttm_segs[0][3]) + float(rttm_segs[0][4])
+    speaker = rttm_segs[0][7]
 
     for row in rttm_segs[1:]:
         s = float(row[3])
         e = float(row[3]) + float(row[4])
+        spkr = row[7]
 
         if is_overlapped(end, s):
             # update previous segment end, i.e. duration
-            merged_segs[-1][4] = str(round((s - strt), 4))
+            merged_segs[-1][4] = str(round((s - strt), 5))
 
             # add overlap region between 2nd start and 1st end
-            row_ov = row
-            row_ov[3] = str(round(s, 4))
-            row_ov[4] = str(round(end - s, 4))
-            row_ov[7] = "overlap"  # previous_row[7] + '-'+ row[7]
-            merged_segs.append(row_ov)
+            if insert_ov:
+                row_ov = row
+                row_ov[3] = str(round(s, 5))
+                row_ov[4] = str(round(end - s, 5))
+                row_ov[7] = "overlap"  # previous_row[7] + '-'+ row[7]
+                merged_segs.append(row_ov)
 
-            # update current segment start
-            row[3] = str(round(end, 4))
+                # update current segment start
+                row[3] = str(round(end, 5))
+
+        if spkr == speaker:
+            # update previous segment end, i.e. duration
+            merged_segs[-1][4] = str(round((e - strt), 5))
+            end = e
+            continue
 
         # Add a new disjoint segment
         strt = s
         end = e
+        speaker = spkr
         merged_segs.append(row)  # this will have 1 spkr ID
 
     return merged_segs
@@ -276,8 +293,8 @@ def get_subsegments(merged_segs, max_subseg_dur=3.0, overlap=1.5):
                     "SPEAKER",
                     rec_id,
                     "0",
-                    str(round(float(subseg_start), 4)),
-                    str(round(float(subseg_dur), 4)),
+                    str(round(float(subseg_start), 5)),
+                    str(round(float(subseg_dur), 5)),
                     "<NA>",
                     "<NA>",
                     row[7],
@@ -349,8 +366,8 @@ def prepare_metadata(
     json_dict = {}
     for row in SUBSEGMENTS:
         rec_id = row[1]
-        strt = str(round(float(row[3]), 4))
-        end = str(round((float(row[3]) + float(row[4])), 4))
+        strt = str(round(float(row[3]), 5))
+        end = str(round((float(row[3]) + float(row[4])), 5))
         subsegment_ID = rec_id + "_" + strt + "_" + end
         dur = row[4]
         start_sample = int(float(strt) * SAMPLERATE)
