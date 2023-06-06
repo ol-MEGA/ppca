@@ -17,7 +17,7 @@ Run the following command to train the model:
 | Release | hyperparams file | n_mels | Test Precision | Test Recall | Test F-Score | Model link | GPUs |
 |:-------------:|:----------------------------:| -------:| -------:| -------:| --------:| :-----------:|  :-----------:|
 | 2021-09-09 | train.yaml | 40 |  0.9518 | 0.9437 | 0.9477 | [Model](https://drive.google.com/drive/folders/1YLYGuiyuTH0D7fXOOp6cMddfQoM74o-Y?usp=sharing) | 1xV100 16GB
-| 2023-02-10 | train.yaml | 40 |  0.9471 | 0.9503 | 0.9487 | JP | 1xRTX 11GB
+| 2023-02-10 | train.yaml | 40 |  0.9494 | 0.9380 | 0.9437 | JP | 1xRTX 11GB
 | 2023-05-03 | train_olMEGA.yaml | 40 |  0.9435 | 0.9295 | 0.9365 | JP | 1xRTX 11GB
 | 2023-05-04 | train_olMEGArep.yaml | 40 |  0.9453 | 0.9257 | 0.9354 | JP | 1xRTX 11GB
 
