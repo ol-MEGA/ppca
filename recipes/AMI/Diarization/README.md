@@ -8,6 +8,8 @@ To install it, type: `pip install scikit-learn`
 ## How to run
 Use the following command to run diarization on AMI corpus.
 `python experiment.py hparams/ecapa_tdnn.yaml` or `python experiment.py hparams/xvectors.yaml` depending upon the model used.
+Use the following command to run diarization on VPC simulated conversations data.
+`python experiment_vpc.py hparams/ecapa_tdnn_vpc.yaml` 
 
 
 ## Speaker Diarization using Deep Embedding and Spectral Clustering
@@ -22,9 +24,7 @@ The forgiveness collar of 0.25 sec is used and overlaps are ignored while evalua
 | ---- |----------- | ------------ | ------ |------| ------| ------ |
 | 2021 | ECAPA-TDNN + SC | HeadsetMix | 2.02% | 1.78% | 2.43% | 4.03% |
 | 2023 | ECAPA-TDNN + SC | HeadsetMix | 2.22% | 2.18% | 2.86% | 1.82% |
-| 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams_fixed | 3.00% | 3.33% | 3.65% | 4.22% |
-| 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams_rand | 9.95% | 11.13% | 12.39% | 15.97% |
-| 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGA | 42.86% | 35.18% |46.41% | 38.93% |
+| 2023 | ECAPA-TDNN + SC | HeadsetMix + McAdams_rand | 9.95% | 11.13% | 14.40% | 10.09% |
 | 2023 | ECAPA-TDNN + SC | HeadsetMix + olMEGArep | 18.04% | 14.08% | 18.29% | 16.20% |
 | 2021 | ECAPA-TDNN + SC | LapelMix | 2.17% | 2.36% | 2.34% | 2.57% |
 | 2021 | ECAPA-TDNN + SC | Array-1 | 2.95% | 2.75% | 3.07% | 3.30% |

@@ -1,5 +1,5 @@
 """
-Data preparation: VPC meeting mix
+Data preparation: VPC simulated conversations
 
 Prepares metadata files (JSON) from VAD annotations in "vpc_mix.json" using RTTM format.
 """
@@ -30,7 +30,7 @@ def prepare_vpc(
     overlap=1.5,
 ):
     """
-    Prepares reference RTTM and JSON files for the AMI dataset.
+    Prepares reference RTTM and JSON files for the VPC simulated meetings dataset.
 
     Arguments
     ---------
@@ -52,12 +52,10 @@ def prepare_vpc(
     Example
     -------
     >>> from recipes.AMI.vpc_prepare import prepare_vpc
-    >>> data_folder = '/network/datasets/ami/amicorpus/'
-    >>> manual_annot_folder = '/home/mila/d/dawalatn/nauman/ami_public_manual/'
+    >>> data_folder = '/network/datasets/vpc_simulated_meetings/'
+    >>> json_path = '/path/to/vpc_mix.json/'
     >>> save_folder = 'results/save/'
-    >>> split_type = 'full_corpus_asr'
-    >>> mic_type = 'Lapel'
-    >>> prepare_ami(data_folder, manual_annot_folder, save_folder, split_type, mic_type)
+    >>> prepare_vpc(json_path, data_folder, save_folder)
     """
 
     # Meta files
@@ -95,7 +93,7 @@ def prepare_vpc(
         )
         return
 
-    msg = "\tCreating meta-data file for the VPC meeting mix Dataset.."
+    msg = "\tCreating meta-data file for the VPC simulated meetings Dataset.."
     logger.debug(msg)
 
     # Prepare RTTM from XML(manual annot) and store are groundtruth
@@ -201,7 +199,6 @@ def prepare_RTTM(dset, out_rttm_file):
 
 def is_overlapped(end1, start2):
     """Returns True if the two segments overlap
-    Takes rounding inaccuricies into account
 
     Arguments
     ---------

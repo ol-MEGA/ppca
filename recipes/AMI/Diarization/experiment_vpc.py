@@ -16,7 +16,7 @@ Citation: This recipe is based on the following paper,
 
 Authors
  * Nauman Dawalatabad 2020
- * Jule Pohlhausen 2023
+ * Jule Pohlhausen 2023: adapt to VPC simulated meeting data
 """
 
 import os
@@ -500,10 +500,6 @@ if __name__ == "__main__":  # noqa: C901
         overrides=overrides,
     )
 
-    # Extend save folders by forgiveness collar
-    #params["der_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
-    #params["sys_rttm_dir"] += "/" + str(int(params["forgiveness_collar"]*1000)) + "ms_collar"
-
     # Few more experiment directories inside results/ (to maintain cleaner structure).
     exp_dirs = [
         params["embedding_dir"],
@@ -532,7 +528,7 @@ if __name__ == "__main__":  # noqa: C901
     # Following few lines selects option for different backend and affinity matrices. Finds best values for hyperameters using dev set.
     best_nn = None
     if params["affinity"] == "nn":
-        logger.info("Tuning for nn (Multiple iterations over VPC Dev set)")
+        logger.info("Tuning for nn (Multiple iterations over VPC libri dev set)")
         best_nn = dev_nn_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
 
     n_lambdas = None
@@ -544,7 +540,7 @@ if __name__ == "__main__":  # noqa: C901
         # oracle num_spkrs or not, doesn't matter for kmeans and SC backends
         # cos: Tune for the best pval for SC /kmeans (for unknown num of spkrs)
         logger.info(
-            "Tuning for p-value for SC (Multiple iterations over VPC Dev set)"
+            "Tuning for p-value for SC (Multiple iterations over VPC libri dev set)"
         )
         best_pval = dev_pval_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)
 
@@ -557,7 +553,7 @@ if __name__ == "__main__":  # noqa: C901
         if params["oracle_n_spkrs"] is False:
             # nn: Tune num of number of components (to be updated later)
             logger.info(
-                "Tuning for number of eigen components for NN (Multiple iterations over VPC Dev set)"
+                "Tuning for number of eigen components for NN (Multiple iterations over VPC libri dev set)"
             )
             # dev_tuner used for tuning num of components in NN. Can be used in future.
             n_lambdas = dev_tuner(dev_meta, params["dev_subset"], dev_ref_rttm)

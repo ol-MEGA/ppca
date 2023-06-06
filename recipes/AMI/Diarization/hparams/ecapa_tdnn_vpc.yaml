@@ -2,8 +2,9 @@
 # Model: Speaker Diarization Baseline
 # Embeddings: Deep embedding
 # Clustering Technique: Spectral clustering
-# Dataset: VPC meeting mix
-# Authors: Nauman Dawalatabad 2020, Jule Pohlhausen 2023
+# Dataset: VPC simulated meetings
+# Authors: Nauman Dawalatabad 2020
+#          Jule Pohlhausen 2023
 # #################################################
 
 seed: 1234
