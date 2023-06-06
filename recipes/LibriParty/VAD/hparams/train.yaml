@@ -21,6 +21,8 @@ n_fft: 400
 n_mels: 40
 win_length: 25  # in ms
 hop_length: 10  # in ms
+smoothPSD: False
+repeatPSD: False
 
 # Output folders
 output_folder: !ref results/VAD_CRDNN/<seed>
@@ -132,6 +134,8 @@ compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>
     win_length: !ref <win_length>  # in ms
     hop_length: !ref <hop_length>  # in ms
+    smoothPSD: !ref <smoothPSD>
+    repeatPSD: !ref <repeatPSD>
 
 mean_var_norm: !new:speechbrain.processing.features.InputNormalization
     norm_type: sentence
