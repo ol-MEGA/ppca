@@ -2,20 +2,18 @@
 # Model: Speaker Diarization Baseline
 # Embeddings: Deep embedding
 # Clustering Technique: Spectral clustering
-# Authors: Nauman Dawalatabad 2020
+# Dataset: VPC meeting mix
+# Authors: Nauman Dawalatabad 2020, Jule Pohlhausen 2023
 # #################################################
 
 seed: 1234
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
 
 # Directories: Replace !PLACEHOLDER with full path of the directory.
-# Download data from: http://groups.inf.ed.ac.uk/ami/download/
-data_folder: !PLACEHOLDER # e.g., /path/to/amicorpus/
+data_folder: !PLACEHOLDER # e.g., /path/to/vpc_meeting_mix/
+json_path: !PLACEHOLDER
 
-# Download manual annotations from: http://groups.inf.ed.ac.uk/ami/download/
-manual_annot_folder: !PLACEHOLDER # e.g., /path/to/ami_public_manual_1.6.2/
-
-output_folder: results/ami/ecapa
+output_folder: results/vpc/ecapa
 save_folder: !ref <output_folder>/save
 result_folder: !ref <output_folder>
 skip_prep: False
@@ -49,14 +47,14 @@ emb_attention_channels: 128
 emb_lin_neurons: 192
 batch_size: 512
 
-# AMI data_prep parameters
-split_type: 'full_corpus_asr'
-skip_TNO: True
-# Options for mic_type: 'Mix-Lapel', 'Mix-Headset', 'Array1', 'Array1-01', 'BeamformIt'
-mic_type: 'Mix-Headset'
-dev_meta_file: !ref <meta_data_dir>/ami_dev.<mic_type>.subsegs.json
-eval_meta_file: !ref <meta_data_dir>/ami_eval.<mic_type>.subsegs.json
-vad_type: 'oracle'
+# data_prep parameters
+dev_subset: libri_dev
+dev_meta_file: !ref <meta_data_dir>/vpc_<dev_subset>.subsegs.json
+eval_subsets: 
+    - libri_dev
+    - libri_test
+    - vctk_dev
+    - vctk_test
 max_subseg_dur: 3.0
 overlap: 1.5
 
@@ -68,7 +66,7 @@ max_num_spkrs: 10
 oracle_n_spkrs: True
 
 # DER evaluation parameters
-ignore_overlap: True
+ignore_overlap: False
 forgiveness_collar: 0.25
 
 # Used for multi-mic beamformer
@@ -76,12 +74,6 @@ sampling_rate: 16000
 
 dataloader_opts:
     batch_size: !ref <batch_size>
-
-apply_anon: True
-random_coeff: False
-anonymize_McAdams: !new:speechbrain.lobes.augment.anonymizeMcAdams
-    sample_rate: !ref <sampling_rate>
-    random_coeff: !ref <random_coeff>
 
 compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>

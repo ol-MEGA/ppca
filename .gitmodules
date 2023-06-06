@@ -1,0 +1,3 @@
+[submodule "mms_msg"]
+	path = mms_msg
+	url = https://github.com/JulePohlhausen/mms_msg.git

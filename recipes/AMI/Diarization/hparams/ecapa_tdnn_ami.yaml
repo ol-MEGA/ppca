@@ -3,6 +3,7 @@
 # Embeddings: Deep embedding
 # Clustering Technique: Spectral clustering
 # Authors: Nauman Dawalatabad 2020
+#          Jule Pohlhausen 2023 added AMI-diarization-setup rttms
 # #################################################
 
 seed: 1234
@@ -12,12 +13,12 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 # Download data from: http://groups.inf.ed.ac.uk/ami/download/
 data_folder: !PLACEHOLDER # e.g., /path/to/amicorpus/
 
-# Download manual annotations from: http://groups.inf.ed.ac.uk/ami/download/
-manual_annot_folder: !PLACEHOLDER # e.g., /path/to/ami_public_manual_1.6.2/
+# Download reference rttms from: https://github.com/BUTSpeechFIT/AMI-diarization-setup.git
+ami_setup_folder: !PLACEHOLDER # e.g., /path/to/AMI-diarization-setup
+annot_type: only_words
 
-output_folder: results/ami/ecapa
+output_folder: !ref results/ami/<annot_type>/ecapa
 save_folder: !ref <output_folder>/save
-result_folder: !ref <output_folder>
 skip_prep: False
 
 # Embedding model
@@ -30,11 +31,11 @@ skip_prep: False
 pretrain_path: speechbrain/spkrec-ecapa-voxceleb
 
 # Some more exp folders (for cleaner structure).
-embedding_dir: !ref <result_folder>/emb
+embedding_dir: !ref <save_folder>/emb
 meta_data_dir: !ref <save_folder>/metadata
 ref_rttm_dir: !ref <save_folder>/ref_rttms
-sys_rttm_dir: !ref <result_folder>/sys_rttms
-der_dir: !ref <result_folder>/DER
+sys_rttm_dir: !ref <save_folder>/sys_rttms
+der_dir: !ref <save_folder>/DER
 
 # Spectral feature parameters
 n_mels: 80
@@ -51,11 +52,11 @@ batch_size: 512
 
 # AMI data_prep parameters
 split_type: 'full_corpus_asr'
-skip_TNO: True
+skip_TNO: False
 # Options for mic_type: 'Mix-Lapel', 'Mix-Headset', 'Array1', 'Array1-01', 'BeamformIt'
 mic_type: 'Mix-Headset'
-dev_meta_file: !ref <meta_data_dir>/ami_dev.<mic_type>.subsegs.json
-eval_meta_file: !ref <meta_data_dir>/ami_eval.<mic_type>.subsegs.json
+dev_meta_file: !ref <meta_data_dir>/ami_dev.<annot_type>.<mic_type>.subsegs.json
+eval_meta_file: !ref <meta_data_dir>/ami_eval.<annot_type>.<mic_type>.subsegs.json
 vad_type: 'oracle'
 max_subseg_dur: 3.0
 overlap: 1.5
@@ -76,12 +77,6 @@ sampling_rate: 16000
 
 dataloader_opts:
     batch_size: !ref <batch_size>
-
-apply_anon: True
-random_coeff: False
-anonymize_McAdams: !new:speechbrain.lobes.augment.anonymizeMcAdams
-    sample_rate: !ref <sampling_rate>
-    random_coeff: !ref <random_coeff>
 
 compute_features: !new:speechbrain.lobes.features.Fbank
     n_mels: !ref <n_mels>
@@ -106,7 +101,7 @@ mean_var_norm_emb: !new:speechbrain.processing.features.InputNormalization
     std_norm: False
 
 pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
-    collect_in: !ref <result_folder>
+    collect_in: !ref <save_folder>
     loadables:
         embedding_model: !ref <embedding_model>
     paths:
