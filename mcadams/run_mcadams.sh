@@ -21,7 +21,8 @@
 set -e
 
 #===== begin config =======
-dset=$1 # path/to/amicorpus
+dset=$1 # path/to/iput/dataset
+json_path=$2 # path/to/json/of/iput/dataset
 anon_data_suffix=_mcadams
 
 #McAdams anonymisation configs
@@ -46,9 +47,9 @@ mkdir -p $dset$anon_data_suffix
 
 #anonymise dataset 
 if $mcadams_rand; then
-    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --mc_rand
+    python mcadams/anonymise_mcadams_vpc.py --data_dir=$dset --json_path=$json_path --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --mc_rand
 else
-    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --no-mc_rand
+    python mcadams/anonymise_mcadams_vpc.py --data_dir=$dset --json_path=$json_path --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --no-mc_rand
 fi
 
 #overwrite wav.scp file with new anonymised content

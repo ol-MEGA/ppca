@@ -1,0 +1,87 @@
+# ################################
+# Model: Speaker Verification Baseline using PLDA
+# Authors: Nauman Dawalatabad & Mirco Ravanelli 2020
+# ################################
+
+seed: 1234
+__set_seed: !apply:torch.manual_seed [!ref <seed>]
+
+# Folders and train_log file
+data_folder_tr: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022/baseline/corpora
+data_folder_test: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022/baseline
+output_folder: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/run_plda_verification/results/test_1_xv
+save_folder: !ref <output_folder>/save/
+device: 'cuda:0'
+
+# Use the following links for the official voxceleb splits:
+# VoxCeleb1 (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt
+# VoxCeleb1-H (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt
+# VoxCeleb1-E (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt.
+# VoxCeleb1-E and VoxCeleb1-H lists are drawn from the VoxCeleb1 training set.
+# Therefore you cannot use any files in VoxCeleb1 for training if you are using these lists for testing.
+verification_file: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/trials_files/libri_dev_trials_f/trials
+
+# Here, the pretrained embedding model trained with train_speaker_embeddings.py hparams/train_ecapa_tdnn.yaml
+# is downloaded from the speechbrain HuggingFace repository.
+# However, a local path pointing to a directory containing your checkpoints may also be specified
+# instead (see pretrainer below)
+pretrain_path: speechbrain/spkrec-xvect-voxceleb
+
+# csv files
+train_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/librispeech_360_clean.json
+enrol_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_dev_enrolls.json
+test_data:  /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_dev_trials_f.json
+
+split_ratio: [90, 10]
+seg_dur: 3
+skip_prep: False
+
+batch_size: 128
+n_train_snts: 104014 # used for normalization stats
+
+# Separator
+separator: "-"
+
+# Feature parameters
+n_mels: 24
+emb_dim: 512
+rank_f: 100
+
+# Dataloader options
+train_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+enrol_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+test_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+# Model params
+compute_features: !new:speechbrain.lobes.features.Fbank
+    n_mels: !ref <n_mels>
+
+mean_var_norm: !new:speechbrain.processing.features.InputNormalization
+    norm_type: sentence
+    std_norm: False
+
+embedding_model: !new:speechbrain.lobes.models.Xvector.Xvector
+    in_channels: !ref <n_mels>
+    activation: !name:torch.nn.LeakyReLU
+    tdnn_blocks: 5
+    tdnn_channels: [512, 512, 512, 512, 1500]
+    tdnn_kernel_sizes: [5, 3, 3, 1, 1]
+    tdnn_dilations: [1, 2, 3, 1, 1]
+    lin_neurons: !ref <emb_dim>
+
+compute_plda: !new:speechbrain.processing.PLDA_LDA.PLDA
+    rank_f: !ref <rank_f>
+    nb_iter: 1
+    scaling_factor: 0.1
+
+pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
+    collect_in: !ref <save_folder>
+    loadables:
+        embedding_model: !ref <embedding_model>
+    paths:
+        embedding_model: !ref <pretrain_path>/embedding_model.ckpt

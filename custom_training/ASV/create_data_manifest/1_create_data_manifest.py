@@ -1,11 +1,10 @@
 """
-Creates data manifest from a folder directory in .json format
-Remember: ASR works with 16kHz audio files
-
-Attention: the script assumes the transcripts are organized in the same way as Librispeech does! In this case --transcript-folder can be set to be the same as --data-folder
+Downloads and creates data manifest files for Mini LibriSpeech (spk-id).
+For speaker-id, different sentences of the same speaker must appear in train,
+validation, and test sets. In this case, these sets are thus derived from
+splitting the original training set intothree chunks.
 Authors:
  * Mirco Ravanelli, 2021
- * Modified by Francesco Nespoli, 2022
 """
 import argparse
 import os
@@ -13,14 +12,15 @@ import json
 import shutil
 import random
 import logging
+import numpy as np
 from speechbrain.utils.data_utils import get_all_files, download_file
 from speechbrain.dataio.dataio import read_audio
 
 logger = logging.getLogger(__name__)
-
+MINILIBRI_TRAIN_URL = "http://www.openslr.org/resources/31/train-clean-5.tar.gz"
 SAMPLERATE = 16000
 
-def create_json(wav_list, trans_dict, json_file):
+def create_json(wav_list, json_file):
     """
     Creates the json file given a list of wav files.
     Arguments
@@ -32,23 +32,31 @@ def create_json(wav_list, trans_dict, json_file):
     """
     # Processing all the wav files in the list
     json_dict = {}
+    i = 0
     for wav_file in wav_list:
 
+#        print("Utterance ID {}".format(i))
         # Reading the signal (to retrieve duration in seconds)
         signal = read_audio(wav_file)
         duration = signal.shape[0] / SAMPLERATE
 
         # Manipulate path to get relative path and uttid
         path_parts = wav_file.split(os.path.sep)
-        uttid, _ = os.path.splitext(path_parts[-1])
+        uttid = i #os.path.splitext(path_parts[])
+ 
         relative_path = os.path.join("{data_root}", *path_parts[-5:])
+
+        # Getting speaker-id from utterance-id
+        spk_id, _ = os.path.splitext(path_parts[-1])
+        spk_id = spk_id.split("-")[0]
 
         # Create entry for this utterance
         json_dict[uttid] = {
             "wav": relative_path,
             "length": duration,
-            "words": trans_dict[uttid],
+            "spk_id": spk_id,
         }
+        i+=1
 
     # Writing the dictionary to the json file
     with open(json_file, mode="w") as json_f:
@@ -115,39 +123,27 @@ def split_sets(wav_list, split_ratio):
 
     return data_split
 
-def get_transcription(trans_list):
-    """
-    Returns a dictionary with the transcription of each sentence in the dataset.
+def download_mini_librispeech(destination):
+    """Download dataset and unpack it.
     Arguments
     ---------
-    trans_list : list of str
-        The list of transcription files.
+    destination : str
+        Place to put dataset.
     """
-    # Processing all the transcription files in the list
-    trans_dict = {}
-    for trans_file in trans_list:
-        # Reading the text file
-        with open(trans_file) as f:
-            for line in f:
-                uttid = line.split(" ")[0]
-                text = line.rstrip().split(" ")[1:]
-                text = " ".join(text)
-                trans_dict[uttid] = text
-
-    logger.info("Transcription files read!")
-    return trans_dict 
-
+    train_archive = os.path.join(destination, "train-clean-5.tar.gz")
+    download_file(MINILIBRI_TRAIN_URL, train_archive)
+    shutil.unpack_archive(train_archive, destination)
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Process input data.')
-    parser.add_argument('--data-folder', type=str, help=' Path to the folder where the dataset is stored')
     parser.add_argument('--save-json-train', type=str, help='Path where the train data specification file will be saved')
     parser.add_argument('--save-json-valid', type=str, help='Path where the validation data specification file will be saved.')
     parser.add_argument('--save-json-test', type=str, help='Path where the test data specification file will be saved.')
-    parser.add_argument('--extension', type=str, help='File extension.')
-    parser.add_argument('--split-ratio', type=list, default=[100, 0, 0], help='List composed of three integers that sets split ratios for train, valid, and test sets, respectively. For instance split_ratio')
-    parser.add_argument("--transcripts-folder", type=str,  help="Folder used for getting the transcriptions only")
+    parser.add_argument('--split-ratio', type=list, default=[95, 5, 0], help='List composed of three integers that sets split ratios for train, valid, and test sets, respectively. For instance split_ratio')
+    parser.add_argument('--filelist', type=str, help='List of files to be processed')
+
+
     args = parser.parse_args()
 
     """
@@ -179,30 +175,36 @@ if __name__ == "__main__":
         logger.info("Preparation completed in previous run, skipping.")
         exit()
 
-    # If the dataset doesn't exist yet, download it
-    train_folder = os.path.join(args.data_folder)
-    #if not check_folders(train_folder):
-        #download_mini_librispeech(args.data_folder)
 
     # List files and create manifest from list
     logger.info(
         f"Creating {args.save_json_train}, {args.save_json_valid}, and {args.save_json_test}"
     )
-
-    # Get all the wav files
-    extension = [".{}".format(args.extension)]
-    wav_list = get_all_files(train_folder, match_and=extension)
+   
+    # Get all files
+    with open(args.filelist) as file:
+       lines = [line.rstrip() for line in file]
  
-    # Get all the transcripts
-    extension = [".trans.txt"]
-    trans_list = get_all_files(args.transcripts_folder, match_and=extension)
-    trans_dict = get_transcription(trans_list)         
+    # Get only wavs (From Dushyant file!) 
+    wav_list = []
+    for line in lines:
+       fields = line.split(" ")
+       wav_list.append(fields[0])
 
+
+    spks = [i.split("/")[-1].split("-")[0] for i in wav_list]
+    print(len(np.unique(spks)) )
+    print(len(wav_list))
+    exit()
     # Random split the signal list into train, valid, and test sets.
     data_split = split_sets(wav_list, args.split_ratio)
+#    print(len(data_split["train"]))
+#    print(len(data_split["valid"]))
+#    print(len(data_split["test"]))
+#    exit()
 
     # Creating json files
-    create_json(data_split["train"], trans_dict, args.save_json_train)
-    create_json(data_split["valid"], trans_dict, args.save_json_valid)
-    create_json(data_split["test"], trans_dict, args.save_json_test)
+    create_json(data_split["train"], args.save_json_train)
+    create_json(data_split["valid"], args.save_json_valid)
+    create_json(data_split["test"], args.save_json_test)
 
