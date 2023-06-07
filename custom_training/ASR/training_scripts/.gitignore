@@ -1,4 +1,0 @@
-run_multi_gpu.sh 
-submit_training_multi_gpu.sh
-logs/
-RESULTS/

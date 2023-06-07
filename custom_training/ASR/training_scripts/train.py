@@ -32,6 +32,7 @@ Authors
  * Peter Plantinga 2020
  * Samuele Cornell 2020, 2021, 2022
  * Titouan Parcollet 2021, 2022
+ * Modified by Francesco Nespoli, 2022
 """
 
 import os

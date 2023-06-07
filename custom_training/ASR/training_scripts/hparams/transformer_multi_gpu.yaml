@@ -6,12 +6,13 @@
 # losses: CTC + KLdiv (Label Smoothing loss)
 # Training: Librispeech 960h
 # Authors:  Jianyuan Zhong, Titouan Parcollet, Samuele Cornell
+#           Modified by Francesco Nespoli, 2023
 # ############################################################################
 # Seed needs to be set at top of yaml, before objects with parameters are made
 
 seed: 74443
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
-output_folder: !ref RESULTS/smothedPSD
+output_folder: !ref results/transformer/<seed>
 wer_file: !ref <output_folder>/wer.txt
 save_folder: !ref <output_folder>/save
 train_log: !ref <output_folder>/train_log.txt
@@ -22,23 +23,23 @@ train_log: !ref <output_folder>/train_log.txt
 # speechbrain HuggingFace repository. However, a local path pointing to a
 # directory containing the lm.ckpt and tokenizer.ckpt may also be specified
 # instead. E.g if you want to use your own LM / tokenizer.
-pretrained_lm_tokenizer_path: /fs/scratch/home/francesco_nespoli/SpeechBrain/ASR/training/asr_transformer/trained-on-libri-600/results/transformer/74443/save
+pretrained_lm_tokenizer_path: speechbrain/asr-transformer-transformerlm-librispeech
 
-# Data file
-data_folder: /fs/scratch/home/francesco_nespoli/SpeechBrain/speaker_embeddings/train_from_scratch/data/anon_train_clean_360/LibriSpeech_960
+# Data files
+data_folder: !PLACEHOLDER # e.g., /path/to/LibriSpeech
 # If RIRS_NOISES dir exists in /localscratch/xxx_corpus/RIRS_NOISES
 # then data_folder_rirs should be /localscratch/xxx_corpus
 # otherwise the dataset will automatically be downloaded
 # data_folder_rirs: !ref <data_folder>
-train_splits: ["train-clean-360"]
+train_splits: ["train-clean-100", "train-clean-360", "train-other-500"]
 dev_splits: ["dev-clean"]
-test_splits: ["test-clean"]
+test_splits: ["test-clean", "test-other"]
 skip_prep: False
-train_csv: /fs/scratch/home/francesco_nespoli/SpeechBrain/ASR/data_manifests/Clean_data/libri960/train/full_train.json
-valid_csv: /fs/scratch/home/francesco_nespoli/SpeechBrain/ASR/data_manifests/Clean_data/libri960/devel/valid.json
+train_csv: !ref <output_folder>/train.csv
+valid_csv: !ref <output_folder>/dev-clean.csv
 test_csv:
-    - /fs/scratch/home/francesco_nespoli/SpeechBrain/ASR/data_manifests/Clean_data/libri960/test/test_clean.json
-    - /fs/scratch/home/francesco_nespoli/SpeechBrain/ASR/data_manifests/Clean_data/libri960/test/test_other.json  
+    - !ref <output_folder>/test-clean.csv
+    - !ref <output_folder>/test-other.csv
 
 ckpt_interval_minutes: 30 # save checkpoint every N min
 
@@ -48,19 +49,23 @@ ckpt_interval_minutes: 30 # save checkpoint every N min
 # Empirically, we found that this value should be >= 128.
 # Please, set your parameters accordingly.
 number_of_epochs: 90
-batch_size: 32           # for 4 GPUS This works for 1x GPU with 40GB
+batch_size: 32           #  This works for 4 GPUS 
 ctc_weight: 0.3
 grad_accumulation_factor: 2
 max_grad_norm: 5.0
 loss_reduction: 'batchmean'
 sorting: random
+num_workers: 12
 
+# This setup works well for V100 32GB GPU, adapts it to your needs.
+# Or turn it off (but training speed will decrease)
 dynamic_batching: False 
-
+max_batch_len: 100000 # in terms of frames
+num_bucket: 200
 dynamic_batch_sampler:
     feats_hop_size: 0.01
-    max_batch_len: 100000 # in terms of frames
-    num_buckets: 200
+    max_batch_len: !ref <max_batch_len>
+    num_buckets: !ref <num_bucket>
     shuffle_ex: False # if true re-creates batches at each epoch shuffling examples.
     batch_ordering: descending
     max_batch_ex: -1
@@ -77,7 +82,7 @@ n_mels: 80
 train_dataloader_opts:
     batch_size: !ref <batch_size>
     shuffle: True
-    num_workers: 12
+    num_workers: !ref <num_workers>
 
 valid_dataloader_opts:
     batch_size: 1
@@ -258,7 +263,6 @@ compute_features: !new:speechbrain.lobes.features.Fbank
     sample_rate: !ref <sample_rate>
     n_fft: !ref <n_fft>
     n_mels: !ref <n_mels>
-    smoothPSD: True
 
 train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
     save_file: !ref <train_log>
