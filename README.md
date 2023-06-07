@@ -23,16 +23,8 @@ this function generate 3 json files with the training, validation and test sets.
 
 
 ## ASV Pipeline 
-This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb SpeakerRec recipe. First it creates the data manifests in a json format and then uses them for the training of an ASV model using ECAPA-TDNN embeddings.
-
-### Create the data manifest
-
-- go to custom_training/ASV/create_data_manifest/ and you will find 1_create_data_manifest.py
-- the function can be run as follows 
-
-   `python 1_create_data_manifest.py --data-folder /path/to/dataset  --save-json-train path/wheretosave/train.json --save-json-valid path/wheretosave/valid.json --save-json-test  path/wheretosave/test.json --extension extension/of/audio/files(wav, flac ex.) --transcripts-folder path/to/folder/with/transcripts `
-
-   	this function generate 3 json files with the training, validation and test sets.
+This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb SpeakerRec recipe. 
+For creating the data manifests in a json format please refer to `voxceleb_prepare.py` in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifets are used for the training of an ASV model using ECAPA-TDNN embeddings.
 
 ### ASV training
 - to run the training of the model, custom_training/ASV/training_script/submit_training.sh
