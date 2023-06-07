@@ -3,6 +3,7 @@
 """
 @author: Jose Patino, Massimiliano Todisco, Pramod Bachhav, Nicholas Evans
 Audio Security and Privacy Group, EURECOM
+Modified by Jule Pohlhausen, 2023
 """
 import os
 import librosa

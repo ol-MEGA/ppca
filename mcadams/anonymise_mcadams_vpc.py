@@ -1,12 +1,12 @@
 #!/usr/bin/env python3.0
 # -*- coding: utf-8 -*-
 """
-Anonymise VPC meeting mix data
+Anonymise VPC simulated conversation data
 saves infos: utteranceID, speakerID, duration in samples, offset in samples, Scaling factor, McAdams Coeff., ConversationID
 
 @author: Jose Patino, Massimiliano Todisco, Pramod Bachhav, Nicholas Evans
 Audio Security and Privacy Group, EURECOM
-Jule Pohlhausen 2023
+Modified by Jule Pohlhausen, 2023
 """
 import os
 import numpy as np

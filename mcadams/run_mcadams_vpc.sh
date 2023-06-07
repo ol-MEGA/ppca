@@ -22,7 +22,8 @@
 set -e
 
 #===== begin config =======
-dset=$1 # path/to/iput/dataset
+dset=$1 # path/to/VPC_mixed_meetings
+json_path=$2 # path/to/json/of/iput/dataset
 anon_data_suffix=_mcadams
 
 #McAdams anonymisation configs
@@ -37,23 +38,14 @@ fi
 #=========== end config ===========
 echo Anonymizing $dset ...
 
-#write wav.scp file with all wav files
-if [ ! -f $dset/wav.scp ]; then
-    ls $dset/*/*/*.wav | awk -F'[/]' '{print $NF " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset/wav.scp
-fi
-
 #create folder that will contain the anonymised wav files
 mkdir -p $dset$anon_data_suffix
 
 #anonymise dataset 
 if $mcadams_rand; then
-    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_rand
+    python mcadams/anonymise_mcadams_vpc.py --data_dir=$dset --json_path=$json_path --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_rand
 else
-    python mcadams/anonymise_dir_mcadams.py --data_dir=$dset --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --no-mc_rand
+    python mcadams/anonymise_mcadams_vpc.py --data_dir=$dset --json_path=$json_path --anon_suffix=$anon_data_suffix --n_coeffs=$n_lpc --mc_coeff=$mcadams --no-mc_rand
 fi
-
-#write wav.scp file with new anonymised content
-#note sox is inclued to by-pass that files written by local/anon/anonymise_dir_mcadams.py were in float32 format and not pcm
-ls $dset$anon_data_suffix/*/*/*.wav | awk -F'[/]' '{print $NF " sox " $0 " -t wav -r 16000 -b 16 - |"}' > $dset$anon_data_suffix/wav.scp
 
 echo Done
