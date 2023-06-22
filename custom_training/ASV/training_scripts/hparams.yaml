@@ -1,12 +1,19 @@
 # ################################
 # Model: Speaker identification with ECAPA
-# Authors: Hwidong Na & Mirco Ravanelli
+# Authors: Hwidong Na & Mirco Ravanelli 
+#          modified by Francesco
 # ################################
+
+# Feature parameters
+n_mels: 80
+left_frames: 0
+right_frames: 0
+deltas: False
 
 # Basic parameters
 seed: 1986
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
-output_folder: !ref results/ecapa_sacc/<seed>
+output_folder: !ref results/ecapa_augment/<n_mels>mel/<seed>
 save_folder: !ref <output_folder>/save
 train_log: !ref <output_folder>/train_log.txt
 
@@ -30,8 +37,8 @@ skip_prep: False
 ckpt_interval_minutes: 15 # save checkpoint every N min
 
 # Training parameters
-number_of_epochs: 1
-batch_size: 256
+number_of_epochs: 30
+batch_size: 128
 lr: 0.001
 base_lr: 0.00000001
 max_lr: !ref <lr>
@@ -40,12 +47,6 @@ sample_rate: 16000
 sentence_len: 3.0 # seconds
 shuffle: True
 random_chunk: True
-
-# Feature parameters
-n_mels: 80
-left_frames: 0
-right_frames: 0
-deltas: False
 
 # Number of speakers
 out_n_neurons: 5994 #1211 for vox1  # 5994 for vox2, 7205 for vox1+vox2
@@ -69,14 +70,17 @@ embedding_model: !new:speechbrain.lobes.models.ECAPA_TDNN.ECAPA_TDNN
     dilations: [1, 2, 3, 4, 1]
     groups: [1, 1, 1, 1, 1]
     attention_channels: 128
-    lin_neurons: 512
+    lin_neurons: 192
 
 classifier: !new:speechbrain.lobes.models.ECAPA_TDNN.Classifier
-    input_size: 512
+    input_size: 192
     out_neurons: !ref <out_n_neurons>
 
-epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounterWithStopper
     limit: !ref <number_of_epochs>
+    limit_to_stop: 5
+    limit_warmup: 30
+    direction: "min"
 
 
 augment_wavedrop: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
