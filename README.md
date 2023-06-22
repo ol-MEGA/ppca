@@ -13,31 +13,44 @@ This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.
 
    `python create_data_manifest_ASR.py --data-folder /path/to/dataset  --save-json-train path/wheretosave/train.json --save-json-valid path/wheretosave/valid.json --save-json-test  path/wheretosave/test.json --extension extension/of/audio/files (wav, flac ex.) --transcripts-folder path/to/folder/with/transcripts `
 
-this function generate 3 json files with the training, validation and test sets.
+this function generates 3 json files with the training, validation and test sets.
 
 ### ASR training
 
-- to run the training of the model, custom_training/ASR/training_script/gpu.sh
+- to run the training of the model use custom_training/ASR/training_script/gpu.sh
 - there are different parameters you need to adjust, specifically in the hparams/.yaml file
 
 
 
 ## ASV Pipeline 
-This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb SpeakerRec recipe. 
-For creating the data manifests in a json format please refer to `voxceleb_prepare.py` in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifets are used for the training of an ASV model using ECAPA-TDNN embeddings.
+This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb [SpeakerRec](recipes/VoxCeleb/SpeakerRec) recipe. 
+For creating the data manifests in a json format please refer to [`voxceleb_prepare.py`](recipes/VoxCeleb/voxceleb_prepare.py) in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifets are used for the training of an ASV model using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings.
 
 ### ASV training
-- to run the training of the model, custom_training/ASV/training_script/submit_training.sh
-- there are different parameters you need to adjust, specifically in the hparams/.yaml file
+- Run the following command to train speaker embeddings using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143):
+
+   `python train_speaker_embeddings.py hparams.yaml`
+
+- there are different parameters you need to adjust, specifically in the hparams.yaml file
 
 
 ## VAD Pipeline 
-The voice activity detection is based on the [SpeechBrain](http://speechbrain.github.io/) LibriParty VAD recipe. 
-Run the following command to train the model:
-`python train.py hparams/train.yaml --data_folder=/localscratch/LibriParty/dataset/ --musan_folder=/localscratch/musan/ --commonlanguage_folder=/localscratch/common_voice_kpd`
+The voice activity detection is based on the [SpeechBrain](http://speechbrain.github.io/) LibriParty VAD recipe. Please refer to the corresponding [README.md](recipes/LibriParty/VAD/README.md) for more informations on the preparation of the datasets. 
+
+### VAD training
+Run the following command to train the CRDNN model:
+
+`python train.py hparams/train.yaml --data_folder=/data/LibriParty/dataset/ --musan_folder=/data/musan/ --commonlanguage_folder=/data/common_voice_kpd`
 (change the paths with your local ones)
 
 
 ## SD Pipeline 
-The speaker diarization is based on the [SpeechBrain](http://speechbrain.github.io/) AMI Diarization recipe. 
-Use the following command to run diarization on AMI corpus `python experiment.py hparams/ecapa_tdnn.yaml` or on VPC simulated conversations data `python experiment_vpc.py hparams/ecapa_tdnn_vpc.yaml`. There are different parameters you need to adjust, specifically in the hparams/.yaml file.
+The speaker diarization is based on the [SpeechBrain](http://speechbrain.github.io/) AMI Diarization recipe. Please refer to the corresponding [README.md](recipes/AMI/Diarization/README.md) for more informations on the preparation of the datasets. The SD is based on the same [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings as the ASV model.
+
+### SD experiment
+Use the following command to run diarization on AMI corpus `python experiment.py hparams/ecapa_tdnn.yaml` or on VPC simulated conversations data `python experiment_vpc.py hparams/ecapa_tdnn_vpc.yaml`. There are different parameters you need to adjust, specifically in the hparams/.yaml files.
+
+
+
+## Simulated Conversations
+In order to compare the ASV and SD performance on the same dataset, conversations were simulated based on the [VoicePrivacy Challenge](https://www.voiceprivacychallenge.org) eval and test data. Please refer to the branch simulate_conversations, where the submodule mms-msg is based on the Multipurpose Multi Speaker Mixture Signal Generator ([MMS-MSG](https://github.com/fgnt/mms_msg)).
