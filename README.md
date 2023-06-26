@@ -1,15 +1,14 @@
 # Privacy preserving conversation analysis (PPCA)
-We conducted our experiments with the open-source speechprocessing toolkit [SpeechBrain](http://speechbrain.github.io/).
-We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, hence Automatic Speech Recognition (ASR) model and  Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity
-detection (VAD) and Speaker Diarization (SD).
+We conducted experiments with the open-source speech-processing toolkit [SpeechBrain](http://speechbrain.github.io/) for analysing conversations in everyday life situations, while preserving the privacy.
+We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, hence Automatic Speech Recognition (ASR) and Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity Detection (VAD) and Speaker Diarization (SD).
 
 ## ASR Pipeline 
 This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model.
 
 ### Create the data manifest
 
-- go to custom_training/ASR/create_data_manifest/ and you will find create_data_manifest_ASR.py
-- the function can be run as follows 
+- Go to custom_training/ASR/create_data_manifest/ and you will find create_data_manifest_ASR.py
+- The function can be run as follows 
 
    `python create_data_manifest_ASR.py --data-folder /path/to/dataset  --save-json-train path/wheretosave/train.json --save-json-valid path/wheretosave/valid.json --save-json-test  path/wheretosave/test.json --extension extension/of/audio/files (wav, flac ex.) --transcripts-folder path/to/folder/with/transcripts `
 
@@ -17,8 +16,8 @@ this function generates 3 json files with the training, validation and test sets
 
 ### ASR training
 
-- to run the training of the model use custom_training/ASR/training_script/gpu.sh
-- there are different parameters you need to adjust, specifically in the hparams/.yaml file
+- To run the training of the model use custom_training/ASR/training_script/gpu.sh
+- There are different parameters you need to adjust, specifically in the hparams/.yaml file
 
 
 
@@ -31,7 +30,15 @@ For creating the data manifests in a json format please refer to [`voxceleb_prep
 
    `python train_speaker_embeddings.py hparams.yaml`
 
-- there are different parameters you need to adjust, specifically in the hparams.yaml file
+- There are different parameters you need to adjust, specifically in the hparams.yaml file
+
+### ASV testing
+For testing the ASV model visit custom_training/ASV/testing_scripts. PLDA training happens on LibriSpeech-360.
+We tested the ASV model on the [VoicePrivacy Challenge](https://www.voiceprivacychallenge.org) eval and test data.
+- First, generate the data manifest files, e.g.:
+   `generate_plda_data_manifest/generate_datamanifest_clean.sh`
+- Run ASV on all subsets with PLDA:
+   `run_plda_verification/score_all_plda.sh /path/to/verification_folder python`
 
 
 ## VAD Pipeline 
