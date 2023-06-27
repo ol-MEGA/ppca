@@ -1,0 +1,6 @@
+# For transducer loss
+numba
+# For wav2vec recipe (HuggingFace)
+transformers
+# For wav2vec recipe (Fairsec)
+#fairseq
