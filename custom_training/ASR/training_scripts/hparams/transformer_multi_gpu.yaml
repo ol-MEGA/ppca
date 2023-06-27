@@ -35,11 +35,12 @@ train_splits: ["train-clean-100", "train-clean-360", "train-other-500"]
 dev_splits: ["dev-clean"]
 test_splits: ["test-clean", "test-other"]
 skip_prep: False
-train_csv: !ref <output_folder>/train.csv
-valid_csv: !ref <output_folder>/dev-clean.csv
+json_folder: !PLACEHOLDER # e.g., /path/to/datamanifest/jsons
+train_csv: !ref <json_folder>/train.json # json file containing the training data
+valid_csv: !ref <json_folder>/valid_clean.json # json file containing the validation data  
 test_csv:
-    - !ref <output_folder>/test-clean.csv
-    - !ref <output_folder>/test-other.csv
+    - !ref <json_folder>/test_clean.json # json file containing the test data  
+    - !ref <json_folder>/test_other.json # json file containing the test data  
 
 ckpt_interval_minutes: 30 # save checkpoint every N min
 
