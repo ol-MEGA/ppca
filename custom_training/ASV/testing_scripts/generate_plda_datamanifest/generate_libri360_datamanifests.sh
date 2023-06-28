@@ -1,9 +1,8 @@
 #!/bin/bash
 
 datadir_clean=$1
-extension=$2
-py=$3
-jsoname=$4
+py=$2
+jsoname=$3
 sep="-"
 
 
