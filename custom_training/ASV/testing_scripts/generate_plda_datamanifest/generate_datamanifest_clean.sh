@@ -5,7 +5,7 @@ py=$2
 
 for dset in libri_dev_{enrolls,trials_f,trials_m} \
             vctk_dev_{enrolls,trials_f,trials_m,trials_f_common,trials_m_common} \
-            libri_test_{enrolls,trials_f,trials_m,} \
+            libri_test_{enrolls,trials_f,trials_m} \
             vctk_test_{enrolls,trials_f,trials_m,trials_f_common,trials_m_common}; do
 
    # Wavscp file
