@@ -11,10 +11,16 @@ for dset in libri_dev_{trials_f,trials_m} \
 
    # Get basedir for enrollment data
    dataset=${dset%_trials*} 
-
-   $py speaker_verification_cosine_similarity.py hparams/verification_ecapa.yaml \
-   --data_folder_tr=$data_root --data_folder_test=$data_root \
-   --subset=$dset --subset_enrol=${dataset}_enrolls \
-   --json_folder=$json_folder --separator=$sep
+   
+   # Define Separator
+   if [[ ${dset%%_*} == "vctk"  ]];then
+      sep="_"
+   else
+      sep="'-'"
+   fi
+   
+   $py speaker_verification_cosine_similarityF.py hparams/verification_ecapa.yaml \
+   --data_folder_tr=$data_root --data_folder_test=$data_root --json_folder=$json_folder \
+   --subset=$dset --subset_enrol=${dataset}_enrolls --separator=$sep \
 
 done
