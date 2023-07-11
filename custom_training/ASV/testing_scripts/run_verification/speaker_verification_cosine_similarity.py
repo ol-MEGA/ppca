@@ -171,7 +171,7 @@ def get_verification_scores(veri_test, train_obj, enrol_obj, test_obj):
             exit()
 
         # Select enrol and test embeddings
-        enrol_idx = numpy.where(enrol_obj.modelset == str(enrol_id))
+        enrol_idx = [i for i, s in enumerate(enrol_obj.modelset) if enrol_id in s]
         enrol = torch.from_numpy(enrol_obj.stat1[enrol_idx])
 
         test_idx = numpy.where(test_obj.modelset == str(test_id))

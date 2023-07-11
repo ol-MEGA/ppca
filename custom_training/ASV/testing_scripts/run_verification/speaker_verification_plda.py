@@ -298,7 +298,7 @@ if __name__ == "__main__":
     embeddings = numpy.empty(shape=[0, params["emb_dim"]], dtype=numpy.float64)
 
     # Embedding file for train data
-    xv_file = os.path.join(params["save_folder"], "my_training.pkl")
+    xv_file = os.path.join(params["result_folder"], "my_training.pkl")
     if not(os.path.isdir(params["save_folder"])):
         os.mkdir(params["save_folder"])
 
