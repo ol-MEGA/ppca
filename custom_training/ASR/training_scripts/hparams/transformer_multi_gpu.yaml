@@ -12,7 +12,16 @@
 
 seed: 74443
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
-output_folder: !ref results/transformer/<seed>
+
+# Feature parameters
+sample_rate: 16000
+n_fft: 400
+n_mels: 80
+win_length: 25  # in ms
+hop_length: 10  # in ms
+
+# Path to the folder where you want to save the data
+output_folder: !ref results/transformer/<seed>/mels/<n_mels>/win_length/<win_length>
 wer_file: !ref <output_folder>/wer.txt
 save_folder: !ref <output_folder>/save
 train_log: !ref <output_folder>/train_log.txt
@@ -64,7 +73,7 @@ dynamic_batching: False
 max_batch_len: 100000 # in terms of frames
 num_bucket: 200
 dynamic_batch_sampler:
-    feats_hop_size: 0.01
+    feats_hop_size: !ref <hop_length> // 1000
     max_batch_len: !ref <max_batch_len>
     num_buckets: !ref <num_bucket>
     shuffle_ex: False # if true re-creates batches at each epoch shuffling examples.
@@ -73,11 +82,6 @@ dynamic_batch_sampler:
 
 # stages related parameters
 lr_adam: 0.001
-
-# Feature parameters
-sample_rate: 16000
-n_fft: 400
-n_mels: 80
 
 # Dataloader options
 train_dataloader_opts:
@@ -92,6 +96,9 @@ test_dataloader_opts:
     batch_size: 1
 
 ####################### Model parameters ###########################
+# CNN
+out_ch: 64
+
 # Transformer
 d_model: 512
 nhead: 4
@@ -121,16 +128,16 @@ ctc_weight_decode: 0.40
 ############################## models ################################
 
 CNN: !new:speechbrain.lobes.models.convolution.ConvolutionFrontEnd
-    input_shape: (8, 10, 80)
+    input_shape: [8, 10, !ref <n_mels>]
     num_blocks: 3
     num_layers_per_block: 1
-    out_channels: (64, 64, 64)
+    out_channels: [!ref <out_ch>, !ref <out_ch>, !ref <out_ch>]
     kernel_sizes: (5, 5, 1)
     strides: (2, 2, 1)
     residuals: (False, False, True)
 
 Transformer: !new:speechbrain.lobes.models.transformer.TransformerASR.TransformerASR # yamllint disable-line rule:line-length
-    input_size: 1280
+    input_size: !ref (<n_mels> + 4-1) // 4 * <out_ch>
     tgt_vocab: !ref <output_neurons>
     d_model: !ref <d_model>
     nhead: !ref <nhead>
@@ -264,7 +271,8 @@ compute_features: !new:speechbrain.lobes.features.Fbank
     sample_rate: !ref <sample_rate>
     n_fft: !ref <n_fft>
     n_mels: !ref <n_mels>
-
+    win_length: !ref <win_length>  # in ms
+    hop_length: !ref <hop_length>  # in ms
 train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
     save_file: !ref <train_log>
 

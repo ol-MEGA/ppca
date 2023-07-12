@@ -3,7 +3,7 @@
 The system employs a pre-trained model followed by a PLDA transformation.
 
 To run this recipe, run the following command:
-    >  python 2_speaker_verification_plda.py /home/francesco/Documents/Python_Project/SpeechBrain/speechbrain/recipes/VoxCeleb/SpeakerRec/hparams/verification_plda_xvector.yaml
+    >  python speaker_verification_plda.py hparams/verification_plda_xvector.yaml
 
 Authors
     * Nauman Dawalatabad 2020

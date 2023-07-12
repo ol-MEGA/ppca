@@ -3,25 +3,24 @@
 # Authors: Hwidong Na 2020
 #          Mirco Ravanelli 2020
 #          Francesco Nespoli 2023
+#          Jule Pohlhausen 2023
 # ################################
 
 seed: 1234
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
 
 # Folders and train_log file
-data_folder_tr: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022/baseline/corpora
-data_folder_test: /home/francesco/Documents/Python_Project/VoicePrivacy/speaker-anonymization/Voice-Privacy-Challenge-2022
-output_folder: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/run_plda_verification/results/libri_test_trials_f
+data_folder_tr: !PLACEHOLDER #e.g., /localscratch/librispeech-360
+data_folder_test: !PLACEHOLDER #e.g., /localscratch/voxceleb1_2
+subset: !PLACEHOLDER #e.g., libri_dev_trials_f
+subset_enrol: !PLACEHOLDER #e.g., libri_dev_enrolls
+result_folder: !ref results/voxceleb1_2/speaker_verification_ecapa
+output_folder: !ref <result_folder>/<subset>
 save_folder: !ref <output_folder>/save/
 device: 'cuda:0'
 
-# Use the following links for the official voxceleb splits:
-# VoxCeleb1 (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt
-# VoxCeleb1-H (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt
-# VoxCeleb1-E (cleaned): https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt.
-# VoxCeleb1-E and VoxCeleb1-H lists are drawn from the VoxCeleb1 training set.
-# Therefore you cannot use any files in VoxCeleb1 for training if you are using these lists for testing.
-verification_file: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/trials_files/libri_test_trials_f/trials
+# Define verification file
+verification_file: !ref ../trials_files/<subset>/trials
 
 # Here, the pretrained embedding model trained with train_speaker_embeddings.py hparams/train_ecapa_tdnn.yaml
 # is downloaded from the speechbrain HuggingFace repository.
@@ -29,10 +28,11 @@ verification_file: /home/francesco/Documents/Python_Project/Collaborations/Joerg
 # instead (see pretrainer below)
 pretrain_path: speechbrain/spkrec-ecapa-voxceleb
 
-# csv files
-train_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/librispeech_360_clean.json
-enrol_data: /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_test_enrolls.json
-test_data:  /home/francesco/Documents/Python_Project/Collaborations/Joerg/speechbrain_privacy/custom_training/ASV/testing_scripts/generate_plda_datamanifest/clean_datamanifests/libri_test_trials_f.json
+# json files
+json_folder: !PLACEHOLDER #e.g., /localscratch/generate_plda_datamanifest/jsons
+train_data: !ref <json_folder>/librispeech_360_clean.json
+enrol_data: !ref <json_folder>/<subset_enrol>.json
+test_data:  !ref <json_folder>/<subset>.json
 
 batch_size: 8
 #score_norm: s-norm  # z-norm t-norm s-norm (uncomment to enable it)

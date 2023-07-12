@@ -21,7 +21,7 @@ for dset in libri_dev_{enrolls_anon,trials_f_anon,trials_m_anon} \
    fi
 
 
-   $py generate_plda_data_manifest.py --data-dir $datadir \
+   $py generate_datamanifest.py --data-dir $datadir \
    --wav-scp-file $wavscp \
    --save-json ${dset}.json \
    --data-type  anon \

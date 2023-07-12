@@ -23,7 +23,7 @@ this function generates 3 json files with the training, validation and test sets
 
 ## ASV Pipeline 
 This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb [SpeakerRec](recipes/VoxCeleb/SpeakerRec) recipe. 
-For creating the data manifests in a json format please refer to [`voxceleb_prepare.py`](recipes/VoxCeleb/voxceleb_prepare.py) in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifets are used for the training of an ASV model using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings.
+For creating the data manifests in a json format please refer to [`voxceleb_prepare.py`](recipes/VoxCeleb/voxceleb_prepare.py) in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifests are used for the training of an ASV model using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings.
 
 ### ASV training
 - Run the following command to train speaker embeddings using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143):
@@ -33,12 +33,13 @@ For creating the data manifests in a json format please refer to [`voxceleb_prep
 - There are different parameters you need to adjust, specifically in the hparams.yaml file
 
 ### ASV testing
-For testing the ASV model visit custom_training/ASV/testing_scripts. PLDA training happens on LibriSpeech-360.
+For testing the ASV model visit custom_training/ASV/testing_scripts.
 We tested the ASV model on the [VoicePrivacy Challenge](https://www.voiceprivacychallenge.org) eval and test data.
+The cosine distance is computed on the top of pre-trained embeddings.
 - First, generate the data manifest files, e.g.:
-   `generate_plda_data_manifest/generate_datamanifest_clean.sh`
-- Run ASV on all subsets with PLDA:
-   `run_plda_verification/score_all_plda.sh /path/to/verification_folder python`
+   `generate_datamanifest/generate_datamanifest_clean.sh`
+- Run ASV on all subsets using cosine similarity:
+   `run_verification/score_all_cosine.sh`
 
 
 ## VAD Pipeline 
