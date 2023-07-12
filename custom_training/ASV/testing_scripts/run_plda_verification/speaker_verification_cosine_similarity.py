@@ -1,6 +1,8 @@
 #!/usr/bin/python3
-"""Recipe for training a speaker verification system based on PLDA using any dataset.
-The system employs a pre-trained model followed by a PLDA transformation.
+"""Recipe for training a speaker verification system based on cosine distance.
+The cosine distance is computed on the top of pre-trained embeddings.
+The pre-trained model is automatically downloaded from the web if not specified.
+This recipe is designed to work on a single GPU.
 
 To run this recipe, run the following command:
     >  python speaker_verification_cosine_similarity.py hparams/verification_ecapa.yaml
