@@ -20,7 +20,7 @@ for dset in libri_dev_{enrolls,trials_f,trials_m} \
    fi
 
 
-   $py generate_plda_data_manifest.py --data-dir $datadir \
+   $py generate_datamanifest.py --data-dir $datadir \
    --wav-scp-file $wavscp \
    --save-json ${dset}.json \
    --data-type  clean \
