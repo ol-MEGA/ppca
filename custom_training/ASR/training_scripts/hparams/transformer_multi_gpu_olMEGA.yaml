@@ -18,7 +18,7 @@ sample_rate: 16000
 n_fft: 512
 n_mels: 80
 win_length: 25  # in ms
-hop_length: 10  # in ms
+hop_length: 12.5  # in ms
 
 # Path to the folder where you want to save the data
 output_folder: !ref results/transformer/<seed>/olMEGA/mels/<n_mels>/win_length/<win_length>
