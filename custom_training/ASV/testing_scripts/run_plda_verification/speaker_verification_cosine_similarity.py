@@ -3,7 +3,7 @@
 The system employs a pre-trained model followed by a PLDA transformation.
 
 To run this recipe, run the following command:
-    >  python 2_speaker_verification_plda.py /home/francesco/Documents/Python_Project/SpeechBrain/speechbrain/recipes/VoxCeleb/SpeakerRec/hparams/verification_plda_xvector.yaml
+    >  python speaker_verification_cosine_similarity.py hparams/verification_ecapa.yaml
 
 Authors
     * Nauman Dawalatabad 2020
@@ -157,7 +157,7 @@ def get_verification_scores(veri_test, train_obj, enrol_obj, test_obj):
     for i, line in enumerate(veri_test):
 
         # Reading verification file (enrol_file test_file label)
-        enrol_id = int(line.split(" ")[0].rstrip().split(".")[0].strip())
+        enrol_id = line.split(" ")[0].rstrip().split(".")[0].strip()
         test_id = line.split(" ")[1].rstrip().split(".")[0].strip()
         lab_pair = line.split(" ")[2].rstrip().split(".")[0].strip()
         if lab_pair == "target":
@@ -226,13 +226,6 @@ def get_verification_scores(veri_test, train_obj, enrol_obj, test_obj):
 
     s_file.close()
     return positive_scores, negative_scores
-
-    # Final EER computation
-    #    print(len(positive_scores), len(negative_scores)) # both empty!!!
-    eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
-    min_dcf, th = minDCF(torch.tensor(positive_scores), torch.tensor(negative_scores))
-
-    return eer, min_dcf
 
 
 ############################################################################################################## Data Prep
@@ -338,7 +331,7 @@ if __name__ == "__main__":
     embeddings = numpy.empty(shape=[0, params["emb_dim"]], dtype=numpy.float64)
 
     # Embedding file for train data
-    xv_file = os.path.join(params["save_folder"], "my_training.pkl")
+    xv_file = os.path.join(params["result_folder"], "my_training.pkl")
     if not (os.path.isdir(params["save_folder"])):
         os.mkdir(params["save_folder"])
 
@@ -437,6 +430,7 @@ if __name__ == "__main__":
     del test_obj
     del embeddings_stat
 
+    # Final EER computation
     eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
     logger.info("EER(%%)=%f", eer * 100)
 
@@ -444,5 +438,3 @@ if __name__ == "__main__":
         torch.tensor(positive_scores), torch.tensor(negative_scores)
     )
     logger.info("minDCF=%f", min_dcf * 100)
-
-    # EER( %)=2.415680 with libri_dev_trials_f and no score normalization same with it (weird!)
