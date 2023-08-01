@@ -66,3 +66,14 @@ Use the following command to run diarization on AMI corpus `python experiment.py
 
 ## Simulated Conversations
 In order to compare the ASV and SD performance on the same dataset, conversations were simulated based on the [VoicePrivacy Challenge](https://www.voiceprivacychallenge.org) eval and test data. Please refer to the branch simulate_conversations, where the submodule mms-msg is based on the Multipurpose Multi Speaker Mixture Signal Generator ([MMS-MSG](https://github.com/fgnt/mms_msg)).
+
+
+## Cite
+```bibtex
+@inproceedings{nespoli2022ppca,
+title={Long-term Conversation Analysis: Exploring Utility and Privacy},
+author={Francesco Nespoli, Jule Pohlhausen, Patrick A. Naylor, Joerg Bitzer},
+year={2023},
+booktitle={15th ITG Conference on Speech Communication, Aachen},
+publisher = {{IEEE}},
+}```
