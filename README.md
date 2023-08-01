@@ -2,6 +2,10 @@
 We conducted experiments with the open-source speech-processing toolkit [SpeechBrain](http://speechbrain.github.io/) for analysing conversations in everyday life situations, while preserving the privacy.
 We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, hence Automatic Speech Recognition (ASR) and Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity Detection (VAD) and Speaker Diarization (SD).
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ol-MEGA/ppca/main/docs/images/privacy_utility_scheme.svg" alt="PrivacyUtilityFigure"/>
+</p>
+
 ## ASR Pipeline 
 This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model. For training we used the full 960 hours of LibriSpeech.
 
