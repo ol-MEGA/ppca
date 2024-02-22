@@ -185,6 +185,10 @@ def create_json_dataset(dic, sample_rate, window_size):
             unique_list, seq_timing = remove_duplicates_sort(
                 reference_list, compare_list
             )
+        # check for too short last window
+        if seq_timing[-1][1] - seq_timing[-1][0] < window_size:
+            seq_timing.pop()
+            unique_list.pop()
         speech_sequence_cleaned = []
         overlap = []
         for i, values in enumerate(unique_list):
