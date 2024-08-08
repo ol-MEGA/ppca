@@ -1,5 +1,5 @@
 # Privacy preserving conversation analysis (PPCA)
-We conducted experiments with the open-source speech-processing toolkit [SpeechBrain](http://speechbrain.github.io/) for analysing conversations in everyday life situations, while preserving the privacy.
+We conducted experiments with the open-source speech-processing toolkit [SpeechBrain](http://speechbrain.github.io/) for analyzing conversations in everyday life situations while preserving privacy.
 We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, hence Automatic Speech Recognition (ASR) and Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity Detection (VAD) and Speaker Diarization (SD).
 
 <p align="center">
@@ -7,7 +7,7 @@ We consider the two main privacy aspects for speech recordings: the linguistic s
 </p>
 
 ## ASR Pipeline 
-This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model. For training we used the full 960 hours of LibriSpeech.
+This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First, it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model. For training, we used the full 960 hours of LibriSpeech.
 
 ### Create the data manifest
 
@@ -16,7 +16,7 @@ This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.
 
    `python create_data_manifest_ASR.py --data-folder /path/to/dataset  --save-json-train path/wheretosave/train.json --save-json-valid path/wheretosave/valid.json --save-json-test  path/wheretosave/test.json --extension extension/of/audio/files (wav, flac ex.) --transcripts-folder path/to/folder/with/transcripts `
 
-this function generates 3 json files with the training, validation and test sets.
+this function generates 3 json files with the training, validation, and test sets.
 
 ### ASR training
 
@@ -47,7 +47,7 @@ The cosine distance is computed on the top of pre-trained embeddings.
 
 
 ## VAD Pipeline 
-The voice activity detection is based on the [SpeechBrain](http://speechbrain.github.io/) LibriParty VAD recipe. Please refer to the corresponding [README.md](recipes/LibriParty/VAD/README.md) for more informations on the preparation of the datasets. 
+The voice activity detection is based on the [SpeechBrain](http://speechbrain.github.io/) LibriParty VAD recipe. Please refer to the corresponding [README.md](recipes/LibriParty/VAD/README.md) for more information on the preparation of the datasets. 
 
 ### VAD training
 Run the following command to train the CRDNN model:
@@ -57,7 +57,7 @@ Run the following command to train the CRDNN model:
 
 
 ## SD Pipeline 
-The speaker diarization is based on the [SpeechBrain](http://speechbrain.github.io/) AMI Diarization recipe. Please refer to the corresponding [README.md](recipes/AMI/Diarization/README.md) for more informations on the preparation of the datasets. The SD is based on the same [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings as the ASV model.
+The speaker diarization is based on the [SpeechBrain](http://speechbrain.github.io/) AMI Diarization recipe. Please refer to the corresponding [README.md](recipes/AMI/Diarization/README.md) for more information on the preparation of the datasets. The SD is based on the same [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings as the ASV model.
 
 ### SD experiment
 Use the following command to run diarization on AMI corpus `python experiment.py hparams/ecapa_tdnn.yaml` or on VPC simulated conversations data `python experiment_vpc.py hparams/ecapa_tdnn_vpc.yaml`. There are different parameters you need to adjust, specifically in the hparams/.yaml files.
@@ -76,4 +76,5 @@ author={Francesco Nespoli, Jule Pohlhausen, Patrick A. Naylor, Joerg Bitzer},
 year={2023},
 booktitle={15th ITG Conference on Speech Communication, Aachen},
 publisher = {{IEEE}},
-}```
+}
+```
