@@ -1,0 +1,116 @@
+# ################################
+# Model: Speaker Verification Baseline
+# Authors: Hwidong Na 2020
+#          Mirco Ravanelli 2020
+#          Francesco Nespoli 2023
+#          Jule Pohlhausen 2023
+# ################################
+
+seed: 1234
+__set_seed: !apply:torch.manual_seed [!ref <seed>]
+
+# Folders and train_log file
+data_folder_tr: !PLACEHOLDER #e.g., /localscratch/librispeech-360
+data_folder_test: !PLACEHOLDER #e.g., /localscratch/voxceleb1_2
+subset: !PLACEHOLDER #e.g., libri_dev_trials_f
+subset_enrol: !PLACEHOLDER #e.g., libri_dev_enrolls
+result_folder: !ref results/voxceleb1_2/speaker_verification_ecapa
+output_folder: !ref <result_folder>/<subset>
+save_folder: !ref <output_folder>/save/
+device: 'cuda:0'
+
+# Define verification file
+verification_file: !ref ../trials_files/<subset>/trials
+
+# Here, the pretrained embedding model trained with train_speaker_embeddings.py hparams/train_ecapa_tdnn.yaml
+# is downloaded from the speechbrain HuggingFace repository.
+# However, a local path pointing to a directory containing your checkpoints may also be specified
+# instead (see pretrainer below)
+pretrain_path: speechbrain/spkrec-ecapa-voxceleb
+
+# json files
+json_folder: !PLACEHOLDER #e.g., /localscratch/generate_plda_datamanifest/jsons
+train_data: !ref <json_folder>/librispeech_360_clean.json
+enrol_data: !ref <json_folder>/<subset_enrol>.json
+test_data:  !ref <json_folder>/<subset>.json
+
+# Additional data (for augmentation)
+open_rir_folder: !PLACEHOLDER 
+noise_csv: !ref <open_rir_folder>/noise.csv
+SNR: 5
+
+batch_size: 8
+#score_norm: s-norm  # z-norm t-norm s-norm (uncomment to enable it)
+cohort_size: 20000 # amount of imposter utterances in normalization cohort
+n_train_snts: 400000 # used for normalization stats
+
+# Feature parameters
+sample_rate: 16000
+n_fft: 400
+n_mels: 80
+win_length: 25  # in ms
+hop_length: 10  # in ms
+tau_smooth: 125 # in ms
+smoothPSD: False
+repeatPSD: False
+# left_frames: 0
+# right_frames: 0
+# deltas: False
+
+# Separator for correct data splitting
+separator: "-"
+
+# Dataloader options
+train_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+enrol_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+test_dataloader_opts:
+    batch_size: !ref <batch_size>
+
+compute_features: !new:speechbrain.lobes.features.Fbank
+    n_fft: !ref <n_fft>
+    n_mels: !ref <n_mels>
+    win_length: !ref <win_length>  # in ms
+    hop_length: !ref <hop_length>  # in ms
+    tau_smooth: !ref <tau_smooth>  # in ms
+    smoothPSD: !ref <smoothPSD>
+    repeatPSD: !ref <repeatPSD>
+
+# Data augmentation
+add_noise: !new:speechbrain.processing.speech_augmentation.AddNoise
+    mix_prob: 1.0
+    csv_file: !ref <noise_csv>
+    pad_noise: True
+    snr_low: !ref <SNR>
+    snr_high: !ref <SNR>
+    noise_sample_rate: !ref <sample_rate>
+    clean_sample_rate: !ref <sample_rate>
+
+mean_var_norm: !new:speechbrain.processing.features.InputNormalization
+    norm_type: sentence
+    std_norm: False
+
+embedding_model: !new:speechbrain.lobes.models.ECAPA_TDNN.ECAPA_TDNN
+    input_size: !ref <n_mels>
+    channels: [1024, 1024, 1024, 1024, 3072]
+    kernel_sizes: [5, 3, 3, 3, 1]
+    dilations: [1, 2, 3, 4, 1]
+    attention_channels: 128
+    lin_neurons: 192
+
+compute_plda: !new:speechbrain.processing.PLDA_LDA.PLDA
+    rank_f: 100
+    nb_iter: 10
+    scaling_factor: 0.05
+
+emb_dim: 192
+
+pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
+    collect_in: !ref <save_folder>
+    loadables:
+        embedding_model: !ref <embedding_model>
+    paths:
+        embedding_model: !ref <pretrain_path>/embedding_model.ckpt
