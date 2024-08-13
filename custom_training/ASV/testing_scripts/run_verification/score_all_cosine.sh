@@ -1,8 +1,11 @@
 #!/bin/bash
 
-data_root=$1
+YAML=$1
 json_folder=$2
-py=$3
+pretrain=$3
+result_folder=$4
+data_folder_tr=$5
+data_folder_test=$6
 
 for dset in libri_dev_{trials_f,trials_m} \
             vctk_dev_{trials_f,trials_m,trials_f_common,trials_m_common} \
@@ -19,8 +22,9 @@ for dset in libri_dev_{trials_f,trials_m} \
       sep="'-'"
    fi
    
-   $py speaker_verification_cosine_similarity.py hparams/verification_ecapa.yaml \
-   --data_folder_tr=$data_root --data_folder_test=$data_root --json_folder=$json_folder \
-   --subset=$dset --subset_enrol=${dataset}_enrolls --separator=$sep 
+   python speaker_verification_cosine_similarity.py $YAML \
+   --data_folder_tr=$data_folder_tr --data_folder_test=$data_folder_test --json_folder=$json_folder \
+   --subset=$dset --subset_enrol=${dataset}_enrolls --separator=$sep \
+   --pretrain_path=$pretrain --result_folder=$result_folder
 
 done
