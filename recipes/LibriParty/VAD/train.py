@@ -20,8 +20,9 @@ Authors
  * Mohamed Kleit 2021
  * Arjun V 2021
  * Mirco Ravanelli 2021
+ * Modified: Jule Pohlhausen 2023
 """
-
+import os
 import sys
 import torch
 import logging
@@ -140,6 +141,17 @@ class VADBrain(sb.Brain):
                 test_stats={"loss": stage_loss, "summary": summary},
             )
 
+            if hasattr(self.hparams, "save_file"):
+                save_file = self.hparams.save_file
+            else:
+                save_file = os.path.join(self.hparams.output_folder, "vad_predictions.txt")
+            with open(save_file, "w") as s_file:
+                for b, id in enumerate(self.valid_metrics.ids):
+                    scores = self.valid_metrics.scores[b, :].cpu().numpy()
+                    labels = self.valid_metrics.labels[b, :].cpu().numpy()
+                    for s, l in zip(scores, labels):
+                        s_file.write("%s %f %i\n" % (id, s, l))
+
 
 def dataio_prep(hparams):
     "Creates the datasets and their data processing pipelines."
@@ -171,8 +183,8 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.provides("target")
     def vad_targets(speech, hparams=hparams):
         if hparams["smoothPSD"] and not hparams["repeatPSD"]:
-            # subsample gt vector if features are smoothed (olMEGA)
-            time_resolution = hparams["time_resolution"] * 10
+            # subsample gt vector if features are smoothed+subsampled (olMEGA)
+            time_resolution = hparams["time_resolution"] * hparams["tau_smooth"] / hparams["win_length"]
         else:
             time_resolution = hparams["time_resolution"]
 
