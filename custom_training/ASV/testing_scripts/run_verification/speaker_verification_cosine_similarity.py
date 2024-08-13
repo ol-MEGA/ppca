@@ -48,6 +48,12 @@ def compute_embeddings(wavs, wav_lens):
     wavs = wavs.to(params["device"])
     wav_lens = wav_lens.to(params["device"])
     with torch.no_grad():
+        # Add augmentation if specified
+        if "add_noise" in params:
+            wavs = params["add_noise"](wavs, wav_lens)
+        if "add_reverb" in params:
+            wavs = params["add_reverb"](wavs, wav_lens)
+
         feats = params["compute_features"](wavs)
         feats = params["mean_var_norm"](feats, wav_lens)
         embeddings = params["embedding_model"](feats, wav_lens)
@@ -346,55 +352,58 @@ if __name__ == "__main__":
     params["embedding_model"].to(params["device"])
 
     # Computing training embeddings (skip it of if already extracted)
-    if not os.path.exists(xv_file):
-        logger.info("Extracting embeddings from Training set..")
-        with tqdm(train_dataloader, dynamic_ncols=True) as t:
-            for batch in t:
-                snt_id = batch.id
-                wav, lens = batch.sig
-                spk_ids = batch.spk_id
-
-                # Flattening speaker ids
-                modelset = modelset + spk_ids
-
-                # For segset
-                segset = segset + snt_id
-
-                # Compute embeddings
-                emb = compute_embeddings(wav, lens)
-                xv = emb.squeeze(1).cpu().numpy()
-                embeddings = numpy.concatenate((embeddings, xv), axis=0)
-
-        # Speaker IDs and utterance IDs
-        modelset = numpy.array(modelset, dtype="|O")
-        segset = numpy.array(segset, dtype="|O")
-
-        # Intialize variables for start, stop and stat0
-        s = numpy.array([None] * embeddings.shape[0])
-        b = numpy.array([[1.0]] * embeddings.shape[0])
-
-        embeddings_stat = StatObject_SB(
-            modelset=modelset,
-            segset=segset,
-            start=s,
-            stop=s,
-            stat0=b,
-            stat1=embeddings,
-        )
-
-        del embeddings
-
-        # Save TRAINING embeddings in StatObject_SB object
-        embeddings_stat.save_stat_object(xv_file)
-
+    if not "score_norm" in params:
+        embeddings_stat = []
     else:
-        # Load the saved stat object for train embedding
-        logger.info("Skipping embedding Extraction for training set")
-        logger.info(
-            "Loading previously saved stat_object for train embeddings.."
-        )
-        with open(xv_file, "rb") as input:
-            embeddings_stat = pickle.load(input)
+        if not os.path.exists(xv_file):
+            logger.info("Extracting embeddings from Training set..")
+            with tqdm(train_dataloader, dynamic_ncols=True) as t:
+                for batch in t:
+                    snt_id = batch.id
+                    wav, lens = batch.sig
+                    spk_ids = batch.spk_id
+
+                    # Flattening speaker ids
+                    modelset = modelset + spk_ids
+
+                    # For segset
+                    segset = segset + snt_id
+
+                    # Compute embeddings
+                    emb = compute_embeddings(wav, lens)
+                    xv = emb.squeeze(1).cpu().numpy()
+                    embeddings = numpy.concatenate((embeddings, xv), axis=0)
+
+            # Speaker IDs and utterance IDs
+            modelset = numpy.array(modelset, dtype="|O")
+            segset = numpy.array(segset, dtype="|O")
+
+            # Intialize variables for start, stop and stat0
+            s = numpy.array([None] * embeddings.shape[0])
+            b = numpy.array([[1.0]] * embeddings.shape[0])
+
+            embeddings_stat = StatObject_SB(
+                modelset=modelset,
+                segset=segset,
+                start=s,
+                stop=s,
+                stat0=b,
+                stat1=embeddings,
+            )
+
+            del embeddings
+
+            # Save TRAINING embeddings in StatObject_SB object
+            embeddings_stat.save_stat_object(xv_file)
+
+        else:
+            # Load the saved stat object for train embedding
+            logger.info("Skipping embedding Extraction for training set")
+            logger.info(
+                "Loading previously saved stat_object for train embeddings.."
+            )
+            with open(xv_file, "rb") as input:
+                embeddings_stat = pickle.load(input)
 
     # Set paths for enrol/test embeddings
     enrol_stat_file = os.path.join(params["save_folder"], "stat_enrol.pkl")
