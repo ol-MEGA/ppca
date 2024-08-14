@@ -355,7 +355,7 @@ def spectral_magnitude(stft, power=1, log=False, eps=1e-14):
         return torch.log(spectr + eps)
     return spectr
 
-def smooth_power(psd, hop_len=12.5, tau=125):
+def smooth_power(psd, hop_len=12.5, tau=125, repeatPSD=False):
     """Returns the smoothed PSD with smoothing time tau
     by using a first order low-pass filter and subsampling of 
     10, i.e. tau divided by the hop length.
@@ -385,7 +385,7 @@ def smooth_power(psd, hop_len=12.5, tau=125):
     n_frames = psd.shape[1]
 
     # recursive averaging
-    psd_smoothed = torch.zeros_like(psd)
+    psd_smoothed = torch.zeros_like(psd, device=psd.device)
     psd_smoothed[:, 0, :] = (1 - alpha) * psd[:, 0, :] # init
     for idx in range(1, n_frames):
         psd_smoothed[:, idx, :] = alpha * psd_smoothed[:, idx-1, :] + (1 - alpha) * psd[:, idx, :]
@@ -393,6 +393,62 @@ def smooth_power(psd, hop_len=12.5, tau=125):
     # store a frame every tau=125 ms, i.e. every 10th frame 
     # (for hop length of 12.5ms)    
     psd_smoothed = psd_smoothed[:, ::subsample_factor, :]
+
+    # optional repetition
+    if repeatPSD:
+        psd_smoothed = psd_smoothed.repeat_interleave(subsample_factor, dim=1)[:, :n_frames, :]
+
+    return psd_smoothed
+
+def smooth_power_freq(psd, hop_len=12.5, tau=125, freq_idx=None):
+    """Returns the smoothed PSD with smoothing time tau
+    by using a first order low-pass filter and subsampling by factor 
+    tau divided by the hop length, optional repetiting values to restore 
+    original time resolution.
+
+    Arguments
+    ---------
+    psd : torch.Tensor
+        A tensor,  magnitude of a complex spectrogram,
+        output from the spectral_magnitude function.
+    hop_len : int
+       Hop Length between frames in ms.
+    tau : int or array
+       Time constant in ms.
+    freq_idx : optional array
+       Frequency bin indicies for applying array tau.
+
+    Example
+    -------
+    >>> a = torch.randn([[3, 200, 257]])
+    >>> smooth_power(a, tau=125)
+    tensor([3, 20, 257])
+    """
+
+    # compute time constant
+    alpha = torch.zeros(psd.shape[2], device=psd.device)
+    for i, t in enumerate(tau):
+        if t > 0:
+            sub = int(t / hop_len)
+            alpha[freq_idx[i]:freq_idx[i+1]] = math.exp(-1 / sub)
+
+    # number of frames
+    n_frames = psd.shape[1]
+
+    # recursive averaging
+    psd_smoothed = torch.zeros_like(psd, device=psd.device)
+    psd_smoothed[:, 0, :] = (1 - alpha) * psd[:, 0, :] # init
+    for idx in range(1, n_frames):
+        psd_smoothed[:, idx, :] = alpha * psd_smoothed[:, idx-1, :] + (1 - alpha) * psd[:, idx, :]
+
+    # subsampling: store a frame every tau/hop_length, i.e. every 
+    # 10th frame for 125ms and 12.5ms, respectively 
+    for i, t in enumerate(tau):
+        if t > 0:
+            subsample_factor = int(t / hop_len)
+            psd_temp = psd_smoothed[:, ::subsample_factor, freq_idx[i]:freq_idx[i+1]]
+            psd_temp = psd_temp.repeat_interleave(subsample_factor, dim=1)
+            psd_smoothed[:, :, freq_idx[i]:freq_idx[i+1]] = psd_temp[:, :n_frames, :]
 
     return psd_smoothed
 

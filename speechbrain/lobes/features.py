@@ -10,6 +10,7 @@ from speechbrain.processing.features import (
     STFT,
     spectral_magnitude,
     smooth_power,
+    smooth_power_freq,
     Filterbank,
     DCT,
     Deltas,
@@ -18,7 +19,6 @@ from speechbrain.processing.features import (
 from speechbrain.nnet.CNN import GaborConv1d
 from speechbrain.nnet.normalization import PCEN
 from speechbrain.nnet.pooling import GaussianLowpassPooling
-import warnings
 
 
 class Fbank(torch.nn.Module):
@@ -98,6 +98,9 @@ class Fbank(torch.nn.Module):
         sample_rate=16000,
         f_min=0,
         f_max=None,
+        f_cut=None,
+        mel_cut_idx=None,
+        mel_equal_idx=None,
         n_fft=400,
         n_mels=40,
         filter_shape="triangular",
@@ -107,7 +110,8 @@ class Fbank(torch.nn.Module):
         right_frames=5,
         win_length=25,
         hop_length=10,
-        tau_smooth = 125,
+        tau_smooth=125,
+        freq_idx=None,
     ):
         super().__init__()
         self.deltas = deltas
@@ -119,10 +123,18 @@ class Fbank(torch.nn.Module):
         if self.repeatPSD or self.smoothPSD:
             self.hop_length = hop_length
             self.tau_smooth = tau_smooth
-            self.subsample_factor = int(tau_smooth / hop_length)
+            self.freq_idx = freq_idx
+            if isinstance(tau_smooth, int):
+                self.subsample_factor = int(tau_smooth / hop_length)
 
         if f_max is None:
             f_max = sample_rate / 2
+
+        if not f_cut is None:
+            self.f_cut_idx = int(f_cut / (sample_rate/2) * (n_fft/2 + 1))
+        if not mel_cut_idx is None:
+            if mel_cut_idx < n_mels:
+                self.mel_cut_idx = mel_cut_idx
 
         self.compute_STFT = STFT(
             sample_rate=sample_rate,
@@ -146,6 +158,9 @@ class Fbank(torch.nn.Module):
             left_frames=left_frames, right_frames=right_frames,
         )
 
+        if not mel_equal_idx is None:
+            self.mel_equal_idx = next(i-1 for i,x in enumerate(self.compute_fbanks.f_central) if x > f_cut)
+
     def forward(self, wav):
         """Returns a set of features generated from the input waveforms.
 
@@ -156,11 +171,34 @@ class Fbank(torch.nn.Module):
         """
         STFT = self.compute_STFT(wav)
         mag = spectral_magnitude(STFT)
+
+        # cut to low frequency content
+        if hasattr(self, "f_cut_idx"):
+            mag[:, :, self.f_cut_idx:] = 1e-14
+        
+        # optional: smoothing
         if self.smoothPSD:
-            mag = smooth_power(mag, hop_len=self.hop_length, tau=self.tau_smooth)
-        if self.repeatPSD:
-            mag = mag.repeat_interleave(self.subsample_factor, dim=1)
+            if self.freq_idx == None:
+                mag = smooth_power(
+                    mag, 
+                    hop_len=self.hop_length, 
+                    tau=self.tau_smooth, 
+                    repeatPSD=self.repeatPSD, 
+                    )
+            else:
+                mag = smooth_power_freq(
+                    mag, 
+                    hop_len=self.hop_length, 
+                    tau=self.tau_smooth, 
+                    freq_idx=self.freq_idx,
+                    )
+        
         fbanks = self.compute_fbanks(mag)
+
+        # cut to low frequency content
+        if hasattr(self, "mel_cut_idx"):
+            fbanks = fbanks[:, :, :self.mel_cut_idx]
+
         if self.deltas:
             delta1 = self.compute_deltas(fbanks)
             delta2 = self.compute_deltas(delta1)
