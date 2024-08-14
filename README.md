@@ -1,13 +1,13 @@
 # Privacy preserving conversation analysis (PPCA)
 We conducted experiments with the open-source speech-processing toolkit [SpeechBrain](http://speechbrain.github.io/) for analyzing conversations in everyday life situations while preserving privacy.
-We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, hence Automatic Speech Recognition (ASR) and Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity Detection (VAD) and Speaker Diarization (SD).
+We consider the two main privacy aspects for speech recordings: the linguistic speech content and the speaker identity, evaluated with Automatic Speech Recognition (ASR) and Automatic Speaker Verification (ASV). Our utility tasks are Voice Activity Detection (VAD) and Speaker Diarization (SD).
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/ol-MEGA/ppca/main/docs/images/privacy_utility_scheme.svg" alt="PrivacyUtilityFigure"/>
 </p>
 
 ## ASR Pipeline 
-This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First, it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model. For training, we used the full 960 hours of LibriSpeech.
+This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) LibriSpeech ASR recipe. First, it creates the data manifests in a json format and then uses them for the training of an ASR (transformer + CTC) model. For training, we used the full 960 hours of LibriSpeech. For finetuning, we used the 360 hours of LibriSpeech.
 
 ### Create the data manifest
 
@@ -27,7 +27,7 @@ this function generates 3 json files with the training, validation, and test set
 
 ## ASV Pipeline 
 This pipeline has been derived from the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb [SpeakerRec](recipes/VoxCeleb/SpeakerRec) recipe. 
-For creating the data manifests in a json format please refer to [`voxceleb_prepare.py`](recipes/VoxCeleb/voxceleb_prepare.py) in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. The data manifests are used for the training of an ASV model using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings.
+For creating the data manifests in a json format please refer to [`voxceleb_prepare.py`](recipes/VoxCeleb/voxceleb_prepare.py) in the [SpeechBrain](http://speechbrain.github.io/) VoxCeleb recipe. These data manifests are used to train an ASV model based on [ECAPA-TDNN](https://arxiv.org/abs/2005.07143) embeddings. For finetuning, we used the 360 hours of LibriSpeech.
 
 ### ASV training
 - Run the following command to train speaker embeddings using [ECAPA-TDNN](https://arxiv.org/abs/2005.07143):
@@ -37,9 +37,9 @@ For creating the data manifests in a json format please refer to [`voxceleb_prep
 - There are different parameters you need to adjust, specifically in the hparams.yaml file
 
 ### ASV testing
-For testing the ASV model visit custom_training/ASV/testing_scripts.
+For testing the ASV model, visit custom_training/ASV/testing_scripts.
 We tested the ASV model on the [VoicePrivacy Challenge](https://www.voiceprivacychallenge.org) eval and test data.
-The cosine distance is computed on the top of pre-trained embeddings.
+The cosine similarity is computed on the top of pre-trained embeddings.
 - First, generate the data manifest files, e.g.:
    `generate_datamanifest/generate_datamanifest_clean.sh`
 - Run ASV on all subsets using cosine similarity:
